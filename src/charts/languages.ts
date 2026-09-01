@@ -14,13 +14,13 @@ const THEMES: Record<"light" | "dark", Theme> = {
   dark: { bg: "#0d1117", border: "#30363d", text: "#e6edf3", muted: "#8b949e", other: "#6e7681" },
 };
 
-const WIDTH = 340;
-const HEIGHT = 200;
+const WIDTH = 830;
+const HEIGHT = 180;
 const BAR_X = 24;
 const BAR_W = WIDTH - 48;
 const BAR_Y = 56;
-const BAR_H = 20;
-const BLOCK_Y = 98;
+const BAR_H = 24;
+const BLOCK_Y = 100;
 
 const NAME_TO_SLUG: Record<string, string> = {
   typescript: "typescript",
@@ -163,7 +163,7 @@ export function languagesChart(
   // logo blocks, popping in after the bar fills
   const n = segments.length;
   const gap = 8;
-  const size = Math.min(34, Math.floor((BAR_W - (n - 1) * gap) / n));
+  const size = Math.min(40, Math.floor((BAR_W - (n - 1) * gap) / n));
   const rowW = n * size + (n - 1) * gap;
   let x = BAR_X + (BAR_W - rowW) / 2;
   const POP_START = 1.5;
