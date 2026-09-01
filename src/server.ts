@@ -30,8 +30,8 @@ export function createServer(client: StatsClient, defaultTheme: "light" | "dark"
     })
     .get("/evolution.svg", async ({ query }) => {
       const { theme, count } = themeAndCount({ query });
-      const durParam = Number(query.dur ?? 14);
-      const dur = Number.isFinite(durParam) ? Math.min(Math.max(Math.trunc(durParam), 5), 30) : 14;
+      const durParam = Number(query.dur ?? 0);
+      const dur = Number.isFinite(durParam) ? Math.min(Math.max(Math.trunc(durParam), 0), 60) : 0;
       const [history, stats] = await Promise.all([client.getLangHistory(), client.getStats()]);
       return svg(
         evolutionChart(history.ok ? { months: history.months } : null, stats.ok ? stats.stats : null, {

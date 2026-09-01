@@ -45,9 +45,8 @@ const FALLBACK_COLORS = ["#3178c6", "#f1e05a", "#3572A5", "#b07219", "#ff3e00", 
 interface Segment {
   name: string;
   color: string;
-  x: number; // fixed slot position
-  slot: number; // fixed slot width = final allocation
-  widths: number[]; // per frame, clamped to slot
+  xs: number[]; // per frame — allocation shifts push segments
+  widths: number[]; // per frame — share of the whole bar at that moment
   firstFrame: number;
   finalPct: number;
 }
@@ -65,15 +64,22 @@ function buildSegments(months: MonthHistory[], count: number): Segment[] {
 
   const finalTotals = frames.at(-1) ?? {};
   const grandFinal = Object.values(finalTotals).reduce((s, v) => s + v, 0);
+  // Config = json/yaml/lockfiles, "Other" = unknown extensions — group both out
+  const NON_LANGS = new Set(["Config", "Other"]);
   const ranked = Object.entries(finalTotals).sort((a, b) => b[1] - a[1]);
-  const barLangs = ranked.slice(0, count).map(([l]) => l);
-  const otherLangs = new Set(ranked.slice(count).map(([l]) => l));
+  const display = ranked.filter(([l]) => !NON_LANGS.has(l));
+  const barLangs = display.slice(0, count).map(([l]) => l);
+  const otherLangs = new Set([
+    ...ranked.filter(([l]) => NON_LANGS.has(l)).map(([l]) => l),
+    ...display.slice(count).map(([l]) => l),
+  ]);
   const hasOther = otherLangs.size > 0;
 
   const series = new Map<string, number[]>();
   for (const lang of barLangs) series.set(lang, []);
   if (hasOther) series.set("Other", []);
 
+  // every frame produces exactly one aligned value per segment
   for (const frame of frames) {
     const vals: Record<string, number> = {};
     let other = 0;
@@ -85,32 +91,35 @@ function buildSegments(months: MonthHistory[], count: number): Segment[] {
     if (hasOther) series.get("Other")!.push(other);
   }
 
-  // fixed slots, largest left -> smallest right; only widths animate
+  // order fixed by today's allocation (largest left); per frame each segment
+  // takes its share of the full bar, pushing the rest right
   const segments: Segment[] = [...series.entries()].map(([lang, vals]) => ({
     name: lang,
     color: FALLBACK_COLORS[0]!,
-    finalPct: grandFinal > 0 ? ((vals.at(-1) ?? 0) / grandFinal) * 100 : 0,
-    slot: grandFinal > 0 ? ((vals.at(-1) ?? 0) / grandFinal) * BAR_W : 0,
-    x: 0,
+    xs: [],
     widths: [],
     firstFrame: 0,
+    finalPct: grandFinal > 0 ? ((vals.at(-1) ?? 0) / grandFinal) * 100 : 0,
   }));
   segments.sort((a, b) => b.finalPct - a.finalPct);
 
-  let slotX = BAR_X;
+  for (let f = 0; f < frames.length; f++) {
+    const frameTotal = [...series.values()].reduce((s, v) => s + (v[f] ?? 0), 0);
+    let acc = BAR_X;
+    for (const seg of segments) {
+      const w = frameTotal > 0 ? ((series.get(seg.name)!.at(f) ?? 0) / frameTotal) * BAR_W : 0;
+      seg.widths.push(w);
+      seg.xs.push(acc);
+      acc += w;
+    }
+  }
+
   for (const seg of segments) {
-    seg.x = slotX;
-    slotX += seg.slot;
-    seg.widths = frames.map((_, f) => {
-      const frameTotal = [...series.values()].reduce((s, v) => s + (v[f] ?? 0), 0);
-      const share = frameTotal > 0 ? (series.get(seg.name)!.at(f) ?? 0) / frameTotal : 0;
-      return Math.min(share * BAR_W, seg.slot); // never overflow the slot
-    });
     const first = seg.widths.findIndex((w) => w > 0.5);
     seg.firstFrame = first === -1 ? 0 : first;
   }
 
-  return segments.filter((s) => s.slot > 0.5);
+  return segments.filter((s) => s.finalPct > 0.05);
 }
 
 function keyTimesFor(F: number): string {
@@ -141,7 +150,8 @@ export function evolutionChart(
   }));
 
   const F = history.months.length;
-  const dur = opts.dur;
+  // each month gets a visible step (~0.3s) unless caller overrides dur
+  const dur = opts.dur > 0 ? opts.dur : Math.min(30, Math.max(4, F * 0.3));
   const frameDur = dur / F;
   const keyTimes = keyTimesFor(F);
 
@@ -154,12 +164,13 @@ export function evolutionChart(
   body += `<g clip-path="url(#${clipId})">`;
 
   for (const seg of segments) {
+    const xVals = seg.xs.map((v) => Math.max(v, 0).toFixed(2)).join(";");
     const wVals = seg.widths.map((w) => Math.max(w, 0).toFixed(2)).join(";");
     const anims =
       F > 1
-        ? `<animate attributeName="width" values="${wVals}" keyTimes="${keyTimes}" dur="${dur}s" begin="${BEGIN}s" fill="freeze"/>`
+        ? `<animate attributeName="x" values="${xVals}" keyTimes="${keyTimes}" dur="${dur}s" begin="${BEGIN}s" fill="freeze"/><animate attributeName="width" values="${wVals}" keyTimes="${keyTimes}" dur="${dur}s" begin="${BEGIN}s" fill="freeze"/>`
         : "";
-    body += `\n<rect x="${seg.x.toFixed(2)}" y="${BAR_Y}" width="${Math.max(seg.widths[0]!, 0).toFixed(2)}" height="${BAR_H}" fill="${seg.color}">${anims}</rect>`;
+    body += `\n<rect x="${seg.xs[0]!.toFixed(2)}" y="${BAR_Y}" width="${Math.max(seg.widths[0]!, 0).toFixed(2)}" height="${BAR_H}" fill="${seg.color}">${anims}</rect>`;
   }
   body += `\n</g>`;
 
