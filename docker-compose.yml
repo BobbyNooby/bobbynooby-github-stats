@@ -1,0 +1,11 @@
+services:
+  github-stats-charts:
+    build: .
+    image: github-stats-charts
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3001}:3001"
+    environment:
+      STATS_API_URL: ${STATS_API_URL:?set STATS_API_URL in .env}
+      CACHE_TTL_MINUTES: ${CACHE_TTL_MINUTES:-60}
+      DEFAULT_THEME: ${DEFAULT_THEME:-light}
