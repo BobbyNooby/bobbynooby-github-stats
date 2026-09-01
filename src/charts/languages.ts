@@ -26,13 +26,19 @@ const STYLE = `<style>
   .fade { animation: fadein .4s ease-out both; }
   .rise { opacity: 0; animation: rise .5s cubic-bezier(.22,1,.36,1) both; }
   .line { stroke-dasharray: 1; stroke-dashoffset: 1; opacity: 0; animation: draw 1.1s ease-out both; }
-  .spin { transform-box: fill-box; transform-origin: center; animation: spin 8s linear infinite; }
+  .spin { transform-box: fill-box; transform-origin: center; animation: coin 5s linear infinite; }
   @keyframes fill { to { transform: scaleX(1); } }
   @keyframes pop { from { opacity: 0; transform: scale(0); } to { opacity: 1; transform: scale(1); } }
   @keyframes fadein { from { opacity: 0; } }
   @keyframes rise { from { opacity: 0; transform: translateY(9px); } to { opacity: 1; transform: translateY(0); } }
   @keyframes draw { to { stroke-dashoffset: 0; opacity: 1; } }
-  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes coin {
+    0% { transform: scaleX(1); }
+    25% { transform: scaleX(0.06); }
+    50% { transform: scaleX(-1); }
+    75% { transform: scaleX(-0.06); }
+    100% { transform: scaleX(1); }
+  }
   @media (prefers-reduced-motion: reduce) {
     .fill { transform: scaleX(1); animation: none; }
     .pop, .fade, .rise { animation-duration: .01s; animation-delay: 0s !important; }
