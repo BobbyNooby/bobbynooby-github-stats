@@ -11,15 +11,6 @@ const BAR_H = 24;
 const BLOCK_Y = 112;
 const BEGIN = 1.2;
 
-interface Segment {
-  name: string;
-  color: string;
-  widths: number[]; // per frame
-  xs: number[]; // per frame
-  firstFrame: number;
-  finalPct: number;
-}
-
 const STYLE = `<style>
   .fade { animation: fadein .4s ease-out both; }
   .pop { transform-box: fill-box; transform-origin: center; animation: pop .45s cubic-bezier(.34,1.56,.64,1) both; }
@@ -51,7 +42,17 @@ ${body}
 
 const FALLBACK_COLORS = ["#3178c6", "#f1e05a", "#3572A5", "#b07219", "#ff3e00", "#00ADD8", "#7355dd", "#89e051"];
 
-function buildFrames(months: MonthHistory[], count: number): Segment[] {
+interface Segment {
+  name: string;
+  color: string;
+  x: number; // fixed slot position
+  slot: number; // fixed slot width = final allocation
+  widths: number[]; // per frame, clamped to slot
+  firstFrame: number;
+  finalPct: number;
+}
+
+function buildSegments(months: MonthHistory[], count: number): Segment[] {
   // cumulative lines added per language, snapshot per month
   const cum: Record<string, number> = {};
   const frames: Record<string, number>[] = [];
@@ -63,13 +64,14 @@ function buildFrames(months: MonthHistory[], count: number): Segment[] {
   }
 
   const finalTotals = frames.at(-1) ?? {};
+  const grandFinal = Object.values(finalTotals).reduce((s, v) => s + v, 0);
   const ranked = Object.entries(finalTotals).sort((a, b) => b[1] - a[1]);
   const barLangs = ranked.slice(0, count).map(([l]) => l);
   const otherLangs = new Set(ranked.slice(count).map(([l]) => l));
+  const hasOther = otherLangs.size > 0;
 
   const series = new Map<string, number[]>();
   for (const lang of barLangs) series.set(lang, []);
-  const hasOther = otherLangs.size > 0;
   if (hasOther) series.set("Other", []);
 
   for (const frame of frames) {
@@ -83,31 +85,32 @@ function buildFrames(months: MonthHistory[], count: number): Segment[] {
     if (hasOther) series.get("Other")!.push(other);
   }
 
-  const grandFinal = [...series.values()].reduce((s, vals) => s + (vals.at(-1) ?? 0), 0);
+  // fixed slots, largest left -> smallest right; only widths animate
+  const segments: Segment[] = [...series.entries()].map(([lang, vals]) => ({
+    name: lang,
+    color: FALLBACK_COLORS[0]!,
+    finalPct: grandFinal > 0 ? ((vals.at(-1) ?? 0) / grandFinal) * 100 : 0,
+    slot: grandFinal > 0 ? ((vals.at(-1) ?? 0) / grandFinal) * BAR_W : 0,
+    x: 0,
+    widths: [],
+    firstFrame: 0,
+  }));
+  segments.sort((a, b) => b.finalPct - a.finalPct);
 
-  const segments: Segment[] = [...series.entries()].map(([lang, vals], i) => {
-    const widths = frames.map((_, f) => {
+  let slotX = BAR_X;
+  for (const seg of segments) {
+    seg.x = slotX;
+    slotX += seg.slot;
+    seg.widths = frames.map((_, f) => {
       const frameTotal = [...series.values()].reduce((s, v) => s + (v[f] ?? 0), 0);
-      return frameTotal > 0 ? ((vals[f] ?? 0) / frameTotal) * BAR_W : 0;
+      const share = frameTotal > 0 ? (series.get(seg.name)!.at(f) ?? 0) / frameTotal : 0;
+      return Math.min(share * BAR_W, seg.slot); // never overflow the slot
     });
-    const xs: number[] = [];
-    let acc = BAR_X;
-    for (const w of widths) {
-      xs.push(acc);
-      acc += w;
-    }
-    const firstFrame = widths.findIndex((w) => w > 0.5);
-    return {
-      name: lang,
-      color: FALLBACK_COLORS[i % FALLBACK_COLORS.length]!,
-      widths,
-      xs,
-      firstFrame: firstFrame === -1 ? 0 : firstFrame,
-      finalPct: grandFinal > 0 ? ((vals.at(-1) ?? 0) / grandFinal) * 100 : 0,
-    };
-  });
+    const first = seg.widths.findIndex((w) => w > 0.5);
+    seg.firstFrame = first === -1 ? 0 : first;
+  }
 
-  return segments.sort((a, b) => b.finalPct - a.finalPct);
+  return segments.filter((s) => s.slot > 0.5);
 }
 
 function keyTimesFor(F: number): string {
@@ -132,9 +135,9 @@ export function evolutionChart(
   }
 
   const colorByLang = new Map((stats?.languages ?? []).map((l) => [l.name, l.color]));
-  const segments = buildFrames(history.months, opts.count).map((s) => ({
+  const segments = buildSegments(history.months, opts.count).map((s) => ({
     ...s,
-    color: colorByLang.get(s.name) ?? s.color,
+    color: colorByLang.get(s.name) ?? FALLBACK_COLORS[0]!,
   }));
 
   const F = history.months.length;
@@ -152,16 +155,15 @@ export function evolutionChart(
 
   for (const seg of segments) {
     const wVals = seg.widths.map((w) => Math.max(w, 0).toFixed(2)).join(";");
-    const xVals = seg.xs.map((x) => x.toFixed(2)).join(";");
     const anims =
       F > 1
-        ? `<animate attributeName="x" values="${xVals}" keyTimes="${keyTimes}" dur="${dur}s" begin="${BEGIN}s" fill="freeze"/><animate attributeName="width" values="${wVals}" keyTimes="${keyTimes}" dur="${dur}s" begin="${BEGIN}s" fill="freeze"/>`
+        ? `<animate attributeName="width" values="${wVals}" keyTimes="${keyTimes}" dur="${dur}s" begin="${BEGIN}s" fill="freeze"/>`
         : "";
-    body += `\n<rect x="${seg.xs[0]!.toFixed(2)}" y="${BAR_Y}" width="${Math.max(seg.widths[0]!, 0).toFixed(2)}" height="${BAR_H}" fill="${seg.color}">${anims}</rect>`;
+    body += `\n<rect x="${seg.x.toFixed(2)}" y="${BAR_Y}" width="${Math.max(seg.widths[0]!, 0).toFixed(2)}" height="${BAR_H}" fill="${seg.color}">${anims}</rect>`;
   }
   body += `\n</g>`;
 
-  // timeline scrubber: year boundaries + first/last, revealed as playback passes
+  // timeline scrubber
   body += `\n<line x1="${BAR_X}" y1="${BAR_Y + BAR_H + 10}" x2="${BAR_X + BAR_W}" y2="${BAR_Y + BAR_H + 10}" stroke="${theme.muted}" stroke-opacity="0.3"/>`;
   const labelFrames = new Set<number>([0, F - 1]);
   history.months.forEach((m, i) => {
@@ -183,7 +185,7 @@ export function evolutionChart(
     body += `\n<text x="${x.toFixed(1)}" y="${BAR_Y + BAR_H + 26}" font-size="11" text-anchor="${anchor}" fill="${theme.muted}" opacity="0"><animate attributeName="opacity" calcMode="discrete" values="${values}" keyTimes="${keyT}" dur="${dur}s" begin="${BEGIN}s" fill="freeze"/>${esc(m.month)}</text>`;
   });
 
-  // logo tiles pop in when their language first appears
+  // logo tiles: pop in when their language first appears; static pct label
   const n = segments.length;
   const gap = 8;
   const size = Math.min(40, Math.floor((BAR_W - (n - 1) * gap) / n));
@@ -191,38 +193,12 @@ export function evolutionChart(
   let x = BAR_X + (BAR_W - rowW) / 2;
   segments.forEach((seg) => {
     const delay = BEGIN + seg.firstFrame * frameDur;
+    const label = seg.name === "Other" ? "" : `${Math.round(seg.finalPct)}%`;
     body += `\n<g class="pop" style="animation-delay:${delay.toFixed(2)}s">
 <rect x="${x}" y="${BLOCK_Y}" width="${size}" height="${size}" rx="6" fill="${seg.color}"/>
 ${logoGlyph(seg.name, seg.color, x, BLOCK_Y, size)}
-</g>`;
-
-    if (seg.name === "Other") {
-      x += size + gap;
-      return;
-    }
-
-    // counting pct label: one discrete text per run of equal rounded values,
-    // so the number ticks up/down in sync with the bar morphing
-    const runs: { v: number; from: number; to: number }[] = [];
-    let cur: { v: number; from: number } | null = null;
-    for (let f = seg.firstFrame; f < F; f++) {
-      const v = Math.round((seg.widths[f] / BAR_W) * 100);
-      if (!cur || cur.v !== v) {
-        if (cur) runs.push({ v: cur.v, from: cur.from, to: f });
-        cur = { v, from: f };
-      }
-    }
-    if (cur) runs.push({ v: cur.v, from: cur.from, to: F });
-
-    for (const r of runs) {
-      if (r.v < 1) continue;
-      const t0 = (BEGIN + r.from * frameDur).toFixed(2);
-      const t1 = (BEGIN + r.to * frameDur).toFixed(2);
-      const isLast = r.to === F;
-      const values = isLast ? "0;1" : "0;1;0";
-      const keyT = isLast ? `0;${t0}` : `0;${t0};${t1}`;
-      body += `\n<text x="${(x + size / 2).toFixed(1)}" y="${BLOCK_Y + size + 15}" font-size="10" text-anchor="middle" fill="${theme.muted}" opacity="0"><animate attributeName="opacity" calcMode="discrete" values="${values}" keyTimes="${keyT}" dur="${dur}s" begin="${BEGIN}s" fill="freeze"/>${r.v}%</text>`;
-    }
+</g>
+<text class="fade" style="animation-delay:${(delay + 0.25).toFixed(2)}s" x="${(x + size / 2).toFixed(1)}" y="${BLOCK_Y + size + 15}" font-size="10" text-anchor="middle" fill="${theme.muted}">${label}</text>`;
     x += size + gap;
   });
 

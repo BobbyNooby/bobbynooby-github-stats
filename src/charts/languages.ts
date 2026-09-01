@@ -17,17 +17,19 @@ interface Segment {
 }
 
 const STYLE = `<style>
-  .fill { transform: scaleX(0); transform-origin: left; transform-box: fill-box; animation: fill 1.4s cubic-bezier(.25,.6,.3,1) .2s forwards; }
+  .fill { transform: scaleX(0); transform-origin: left; transform-box: fill-box; animation: fill 1.2s cubic-bezier(.25,.6,.3,1) .5s forwards; }
   .pop { transform-box: fill-box; transform-origin: center; animation: pop .45s cubic-bezier(.34,1.56,.64,1) both; }
   .fade { animation: fadein .4s ease-out both; }
-  .pulse { animation: pulse 2.4s ease-in-out 2s infinite; }
+  .rise { opacity: 0; animation: rise .5s cubic-bezier(.22,1,.36,1) both; }
+  .pulse { animation: pulse 2.4s ease-in-out 1.8s infinite; }
   @keyframes fill { to { transform: scaleX(1); } }
   @keyframes pop { from { opacity: 0; transform: scale(0); } to { opacity: 1; transform: scale(1); } }
   @keyframes fadein { from { opacity: 0; } }
+  @keyframes rise { from { opacity: 0; transform: translateY(9px); } to { opacity: 1; transform: translateY(0); } }
   @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
   @media (prefers-reduced-motion: reduce) {
     .fill { transform: scaleX(1); animation: none; }
-    .pop, .fade { animation-duration: .01s; animation-delay: 0s !important; }
+    .pop, .fade, .rise { animation-duration: .01s; animation-delay: 0s !important; }
     .pulse { animation: none; }
   }
 </style>`;
@@ -102,7 +104,7 @@ export function languagesChart(
   const size = Math.min(40, Math.floor((BAR_W - (n - 1) * gap) / n));
   const rowW = n * size + (n - 1) * gap;
   let x = BAR_X + (BAR_W - rowW) / 2;
-  const POP_START = 1.5;
+  const POP_START = 1.8;
   segments.forEach((s, i) => {
     const delay = POP_START + i * 0.12;
     body += `\n${logoBlock(s, x, size, delay)}`;
@@ -126,14 +128,14 @@ export function languagesChart(
   const rightEdge = WIDTH - 44;
   let ix = rightEdge - totalsW;
   const iconY = 42 - ICON_SIZE + 3;
-  const totalsDelay = (POP_START + n * 0.12 + 0.3).toFixed(2);
-  body += `\n<g class="fade" style="animation-delay:${totalsDelay}s">`;
-  pairs.forEach((p) => {
+  pairs.forEach((p, i) => {
+    const delay = (0.15 + i * 0.12).toFixed(2);
+    body += `\n<g class="rise" style="animation-delay:${delay}s">`;
     body += `\n${icon(p.icon, ix, iconY, ICON_SIZE, theme.muted)}`;
     body += `\n<text x="${(ix + ICON_SIZE + ICON_TEXT_GAP).toFixed(1)}" y="42" font-size="13" fill="${theme.text}">${p.value}</text>`;
+    body += `\n</g>`;
     ix += ICON_SIZE + ICON_TEXT_GAP + textW(p.value) + PAIR_GAP;
   });
-  body += `\n</g>`;
 
   return card(theme, body);
 }
