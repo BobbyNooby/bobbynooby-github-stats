@@ -26,7 +26,7 @@ const STYLE = `<style>
   .fade { animation: fadein .4s ease-out both; }
   .rise { opacity: 0; animation: rise .5s cubic-bezier(.22,1,.36,1) both; }
   .line { stroke-dasharray: 1; stroke-dashoffset: 1; opacity: 0; animation: draw 1.1s ease-out both; }
-  .spin { transform-box: fill-box; transform-origin: center; animation: coin 5s linear infinite; }
+  .spin { transform-box: fill-box; transform-origin: center; animation: coin 6s ease-in-out infinite; }
   @keyframes fill { to { transform: scaleX(1); } }
   @keyframes pop { from { opacity: 0; transform: scale(0); } to { opacity: 1; transform: scale(1); } }
   @keyframes fadein { from { opacity: 0; } }
@@ -248,8 +248,8 @@ export function languagesChart(
   }
 
   const colorByLang = new Map((stats?.languages ?? []).map((l) => [l.name, l.color]));
-  let body = `<circle cx="${WIDTH - 34}" cy="42" r="17" fill="#0d1117" stroke="${theme.border}"/>
-<image class="spin" href="${LOGO_WHITE}" xlink:href="${LOGO_WHITE}" x="${WIDTH - 34 - 11}" y="42 - 11" width="22" height="22"/>
+  let body = `<circle cx="${WIDTH - 28}" cy="40" r="13" fill="#0d1117" stroke="${theme.border}"/>
+<image class="spin" href="${LOGO_WHITE}" xlink:href="${LOGO_WHITE}" x="${WIDTH - 28 - 9}" y="40 - 9" width="18" height="18"/>
 <text class="fade title" x="24" y="42" font-size="21" fill="${theme.text}"><tspan class="gt">&gt;</tspan><tspan>&#160;bobbynooby</tspan></text>`;
   if (stats && stats.languages.length > 0) body += totalsRow(theme, stats);
 
