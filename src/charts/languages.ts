@@ -18,6 +18,14 @@ const G2_H = 86;
 const T2_Y = 420; // all-language tiles
 
 const NON_LANGS = new Set(["Config", "Other"]);
+
+// ---- logo knobs (tune me) ----
+export const LOGO_KNOBS = {
+  insetFromRight: 30, // px from the right border; bigger = further left
+  y: 24,              // px from the top border (logo's top edge); smaller = higher
+  size: 27,           // rendered logo width/height in px
+};
+// -------------------------------
 const FALLBACK_COLORS = ["#3178c6", "#f1e05a", "#3572A5", "#b07219", "#ff3e00", "#00ADD8", "#7355dd", "#89e051"];
 
 const STYLE = `<style>
@@ -253,8 +261,8 @@ export function languagesChart(
 
   const colorByLang = new Map((stats?.languages ?? []).map((l) => [l.name, l.color]));
   // vector site logo, theme-adaptive (fill follows the card theme)
-  const logoK = 27 / SITE_LOGO.w;
-  let body = `<g class="fade"><g class="spin" style="animation-delay:0s"><g transform="translate(${(WIDTH - 30 - 13.5).toFixed(1)} 24) scale(${logoK.toFixed(6)})"><g transform="${SITE_LOGO.transform}" fill="${theme.text}">${SITE_LOGO.body}</g></g></g></g>
+  const logoK = LOGO_KNOBS.size / SITE_LOGO.w;
+  let body = `<g class="fade"><g class="spin" style="animation-delay:0s"><g transform="translate(${(WIDTH - LOGO_KNOBS.insetFromRight - LOGO_KNOBS.size / 2).toFixed(1)} ${LOGO_KNOBS.y}) scale(${logoK.toFixed(6)})"><g transform="${SITE_LOGO.transform}" fill="${theme.text}">${SITE_LOGO.body}</g></g></g></g>
 <text class="fade title" x="24" y="42" font-size="21" fill="${theme.text}"><tspan class="gt">&gt;</tspan><tspan>&#160;bobbynooby</tspan></text>`;
   if (stats && stats.languages.length > 0) body += totalsRow(theme, stats);
 
