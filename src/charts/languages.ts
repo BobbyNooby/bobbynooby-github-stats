@@ -11,8 +11,20 @@ export interface Theme {
 }
 
 const THEMES: Record<"light" | "dark", Theme> = {
-  light: { bg: "#ffffff", border: "#d0d7de", text: "#24292f", muted: "#57606a", other: "#8b949e" },
-  dark: { bg: "#0d1117", border: "#30363d", text: "#e6edf3", muted: "#8b949e", other: "#6e7681" },
+  light: {
+    bg: "#ffffff",
+    border: "#d0d7de",
+    text: "#24292f",
+    muted: "#57606a",
+    other: "#8b949e",
+  },
+  dark: {
+    bg: "#0d1117",
+    border: "#30363d",
+    text: "#e6edf3",
+    muted: "#8b949e",
+    other: "#6e7681",
+  },
 };
 
 const WIDTH = 830;
@@ -64,10 +76,17 @@ function esc(s: string): string {
 const ICONS: Record<string, string> = {
   star: '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
   fork: '<circle cx="12" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><circle cx="18" cy="6" r="3"/><path d="M18 9v1a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V9"/>',
-  person: '<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+  person:
+    '<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
 };
 
-function icon(name: string, x: number, y: number, size: number, color: string): string {
+function icon(
+  name: string,
+  x: number,
+  y: number,
+  size: number,
+  color: string,
+): string {
   return `<g transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) scale(${(size / 24).toFixed(4)})" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICONS[name]}</g>`;
 }
 
@@ -75,7 +94,8 @@ function isLight(hex: string): boolean {
   const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
   if (!m) return false;
   const n = parseInt(m[1], 16);
-  const lum = 0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255);
+  const lum =
+    0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255);
   return lum > 160;
 }
 
@@ -116,7 +136,12 @@ ${body}
 </svg>`;
 }
 
-function logoBlock(seg: Segment, x: number, size: number, delay: number): string {
+function logoBlock(
+  seg: Segment,
+  x: number,
+  size: number,
+  delay: number,
+): string {
   const slug = NAME_TO_SLUG[seg.name.toLowerCase()];
   const path = slug ? LOGOS[slug] : undefined;
   const glyphColor = isLight(seg.color) ? "#1f2328" : "#ffffff";
@@ -138,7 +163,7 @@ ${glyph}
 
 export function languagesChart(
   stats: Stats | null,
-  opts: { theme: "light" | "dark"; count: number }
+  opts: { theme: "light" | "dark"; count: number },
 ): string {
   const theme = THEMES[opts.theme];
 
@@ -147,13 +172,17 @@ export function languagesChart(
       theme,
       `<text class="fade" x="24" y="52" font-size="20" font-weight="600" fill="${theme.text}">GitHub Stats</text>
 <text class="fade" style="animation-delay:.15s" x="24" y="92" font-size="14" fill="${theme.muted}">No data yet — collecting stats.</text>
-<text class="fade" style="animation-delay:.3s" x="24" y="114" font-size="13" fill="${theme.muted}">Check back after the first snapshot.</text>`
+<text class="fade" style="animation-delay:.3s" x="24" y="114" font-size="13" fill="${theme.muted}">Check back after the first snapshot.</text>`,
     );
   }
 
   const top = stats.languages.slice(0, opts.count);
   const rest = stats.languages.slice(opts.count);
-  const segments: Segment[] = top.map((l) => ({ name: l.name, color: l.color, pct: l.pct }));
+  const segments: Segment[] = top.map((l) => ({
+    name: l.name,
+    color: l.color,
+    pct: l.pct,
+  }));
   if (rest.length > 0) {
     segments.push({
       name: "Other",
@@ -164,7 +193,7 @@ export function languagesChart(
 
   const clipId = `bar-${opts.theme}`;
   let body = `<circle class="pulse" cx="${WIDTH - 26}" cy="35" r="5" fill="#3fb950"/>
-<text class="fade title" x="24" y="42" font-size="21" fill="${theme.text}"><tspan class="gt">&gt;</tspan><tspan>bobbynooby</tspan></text>`;
+<text class="fade title" x="24" y="42" font-size="21" fill="${theme.text}"><tspan class="gt">&gt;</tspan><tspan>&#160;bobbynooby</tspan></text>`;
 
   // stacked bar: track + segments revealed left-to-right
   body += `<rect x="${BAR_X}" y="${BAR_Y}" width="${BAR_W}" height="${BAR_H}" rx="5" fill="${theme.muted}" opacity="0.15"/>`;
