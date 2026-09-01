@@ -24,13 +24,13 @@ const STYLE = `<style>
   .pop { transform-box: fill-box; transform-origin: center; animation: pop .45s cubic-bezier(.34,1.56,.64,1) both; }
   .fade { animation: fadein .4s ease-out both; }
   .rise { opacity: 0; animation: rise .5s cubic-bezier(.22,1,.36,1) both; }
-  .line { stroke-dasharray: 1; stroke-dashoffset: 1; animation: draw 1.1s ease-out both; }
+  .line { stroke-dasharray: 1; stroke-dashoffset: 1; opacity: 0; animation: draw 1.1s ease-out both; }
   .pulse { animation: pulse 2.4s ease-in-out 2.4s infinite; }
   @keyframes fill { to { transform: scaleX(1); } }
   @keyframes pop { from { opacity: 0; transform: scale(0); } to { opacity: 1; transform: scale(1); } }
   @keyframes fadein { from { opacity: 0; } }
   @keyframes rise { from { opacity: 0; transform: translateY(9px); } to { opacity: 1; transform: translateY(0); } }
-  @keyframes draw { to { stroke-dashoffset: 0; } }
+  @keyframes draw { to { stroke-dashoffset: 0; opacity: 1; } }
   @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
   @media (prefers-reduced-motion: reduce) {
     .fill { transform: scaleX(1); animation: none; }
