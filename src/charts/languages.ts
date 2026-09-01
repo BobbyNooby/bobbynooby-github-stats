@@ -1,6 +1,6 @@
 import type { DayHistory, Stats } from "../api";
 import { CASCADIA_600, QUICKSAND_300 } from "../font";
-import { LOGO_WHITE } from "../logo";
+import { SITE_LOGO } from "../logo";
 import { THEMES, hasLogo, icon, logoGlyph, type Theme } from "./parts";
 
 // layout: 1 header · 2 bar · 3 selected tiles+pct · 4 two graphs · 5 all-language tiles
@@ -73,7 +73,7 @@ function totalsRow(theme: Theme, stats: Stats): string {
   const totalsW =
     pairs.reduce((w, p) => w + ICON_SIZE + ICON_TEXT_GAP + textW(p.value), 0) +
     (pairs.length - 1) * PAIR_GAP;
-  const rightEdge = WIDTH - 44;
+  const rightEdge = WIDTH - 70; // extra gap before the spinning logo
   let ix = rightEdge - totalsW;
   const iconY = 42 - ICON_SIZE + 3;
   let out = "";
@@ -218,14 +218,21 @@ function buildSeries(days: DayHistory[], count: number): DailySeries {
   return { curves, langOrder, yearTicks, g1Ticks };
 }
 
-function gridlines(theme: Theme, top: number, h: number, ticks: { y: number; label: string }[]): string {
+function gridlines(
+  theme: Theme,
+  top: number,
+  h: number,
+  ticks: { y: number; label: string }[],
+  startDelay: number
+): string {
   let out = "";
-  for (const t of ticks) {
+  ticks.forEach((t, i) => {
+    const delay = (startDelay + i * 0.06).toFixed(2);
     if (t.y !== top + h) {
-      out += `\n<line x1="${BAR_X}" y1="${t.y.toFixed(1)}" x2="${BAR_X + BAR_W}" y2="${t.y.toFixed(1)}" stroke="${theme.muted}" stroke-opacity="0.12"/>`;
+      out += `\n<line class="fade" style="animation-delay:${delay}s" x1="${BAR_X}" y1="${t.y.toFixed(1)}" x2="${BAR_X + BAR_W}" y2="${t.y.toFixed(1)}" stroke="${theme.muted}" stroke-opacity="0.12"/>`;
     }
-    out += `\n<text class="fade" x="${BAR_X - 4}" y="${(t.y + 3).toFixed(1)}" font-size="9" text-anchor="end" fill="${theme.muted}">${t.label}</text>`;
-  }
+    out += `\n<text class="fade" style="animation-delay:${delay}s" x="${BAR_X - 4}" y="${(t.y + 3).toFixed(1)}" font-size="9" text-anchor="end" fill="${theme.muted}">${t.label}</text>`;
+  });
   return out;
 }
 
@@ -245,7 +252,9 @@ export function languagesChart(
   }
 
   const colorByLang = new Map((stats?.languages ?? []).map((l) => [l.name, l.color]));
-  let body = `<image class="spin" href="${LOGO_WHITE}" xlink:href="${LOGO_WHITE}" x="${WIDTH - 28 - 9}" y="31" width="18" height="18"/>
+  // vector site logo, theme-adaptive (fill follows the card theme)
+  const logoK = 27 / SITE_LOGO.w;
+  let body = `<g class="spin" style="animation-delay:0s"><g transform="translate(${(WIDTH - 30 - 13.5).toFixed(1)} 24) scale(${logoK.toFixed(6)})"><g transform="${SITE_LOGO.transform}" fill="${theme.text}">${SITE_LOGO.body}</g></g></g>
 <text class="fade title" x="24" y="42" font-size="21" fill="${theme.text}"><tspan class="gt">&gt;</tspan><tspan>&#160;bobbynooby</tspan></text>`;
   if (stats && stats.languages.length > 0) body += totalsRow(theme, stats);
 
@@ -259,7 +268,7 @@ export function languagesChart(
       segments.push({ name: "Other", color: theme.other, pct: rest.reduce((s, l) => s + l.pct, 0) });
     }
     const clipId = `bar-${opts.theme}`;
-    body += `\n<rect x="${BAR_X}" y="${BAR_Y}" width="${BAR_W}" height="${BAR_H}" rx="5" fill="${theme.muted}" opacity="0.15"/>`;
+    body += `\n<rect class="fade" style="animation-delay:.4s" x="${BAR_X}" y="${BAR_Y}" width="${BAR_W}" height="${BAR_H}" rx="5" fill="${theme.muted}" opacity="0.15"/>`;
     body += `\n<clipPath id="${clipId}"><rect x="${BAR_X}" y="${BAR_Y}" width="${BAR_W}" height="${BAR_H}" rx="5"/></clipPath>`;
     body += `\n<g clip-path="url(#${clipId})"><g class="fill">`;
     let cum = BAR_X;
@@ -314,7 +323,7 @@ ${logoGlyph(s.name, s.color, x, T1_Y, size)}
     graphs.forEach((g, gi) => {
       body += `\n<text class="fade label" style="animation-delay:${LINE_START.toFixed(2)}s" x="24" y="${g.top - 8}" font-size="10" font-weight="600" fill="${theme.muted}">${g.label}</text>`;
       if (gi === 0) {
-        body += gridlines(theme, g.top, g.h, g1Ticks);
+        body += gridlines(theme, g.top, g.h, g1Ticks, 1.9);
       } else {
         body += gridlines(
           theme,
@@ -323,10 +332,11 @@ ${logoGlyph(s.name, s.color, x, T1_Y, size)}
           [0, 25, 50, 75, 100].map((p) => ({
             y: g.top + g.h - (p / 100) * g.h,
             label: `${p}%`,
-          }))
+          })),
+          2.1
         );
       }
-      body += `\n<line x1="${BAR_X}" y1="${g.top + g.h}" x2="${BAR_X + BAR_W}" y2="${g.top + g.h}" stroke="${theme.muted}" stroke-opacity="0.3"/>`;
+      body += `\n<line class="fade" style="animation-delay:${(LINE_START + 0.1).toFixed(2)}s" x1="${BAR_X}" y1="${g.top + g.h}" x2="${BAR_X + BAR_W}" y2="${g.top + g.h}" stroke="${theme.muted}" stroke-opacity="0.3"/>`;
       curves.forEach((c, li) => {
         const d = gi === 0 ? c.linePath : c.sharePath;
         const delay = (LINE_START + 0.2 + gi * 0.5 + li * 0.12).toFixed(2);
