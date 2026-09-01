@@ -254,7 +254,7 @@ export function languagesChart(
   const colorByLang = new Map((stats?.languages ?? []).map((l) => [l.name, l.color]));
   // vector site logo, theme-adaptive (fill follows the card theme)
   const logoK = 27 / SITE_LOGO.w;
-  let body = `<g class="spin" style="animation-delay:0s"><g transform="translate(${(WIDTH - 30 - 13.5).toFixed(1)} 24) scale(${logoK.toFixed(6)})"><g transform="${SITE_LOGO.transform}" fill="${theme.text}">${SITE_LOGO.body}</g></g></g>
+  let body = `<g class="fade"><g class="spin" style="animation-delay:0s"><g transform="translate(${(WIDTH - 30 - 13.5).toFixed(1)} 24) scale(${logoK.toFixed(6)})"><g transform="${SITE_LOGO.transform}" fill="${theme.text}">${SITE_LOGO.body}</g></g></g></g>
 <text class="fade title" x="24" y="42" font-size="21" fill="${theme.text}"><tspan class="gt">&gt;</tspan><tspan>&#160;bobbynooby</tspan></text>`;
   if (stats && stats.languages.length > 0) body += totalsRow(theme, stats);
 
