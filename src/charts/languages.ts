@@ -21,12 +21,21 @@ const NON_LANGS = new Set(["Config", "Other"]);
 
 // ---- logo knobs (tune me) ----
 export const LOGO_KNOBS = {
-  insetFromRight: 30, // px from the right border; bigger = further left
-  y: 24,              // px from the top border (logo's top edge); smaller = higher
-  size: 27,           // rendered logo width/height in px
+  insetFromRight: 40, // px from the right border; bigger = further left
+  y: 23, // px from the top border (logo's top edge); smaller = higher
+  size: 27, // rendered logo width/height in px
 };
 // -------------------------------
-const FALLBACK_COLORS = ["#3178c6", "#f1e05a", "#3572A5", "#b07219", "#ff3e00", "#00ADD8", "#7355dd", "#89e051"];
+const FALLBACK_COLORS = [
+  "#3178c6",
+  "#f1e05a",
+  "#3572A5",
+  "#b07219",
+  "#ff3e00",
+  "#00ADD8",
+  "#7355dd",
+  "#89e051",
+];
 
 const STYLE = `<style>
   .fill { transform: scaleX(0); transform-origin: left; transform-box: fill-box; animation: fill 1.2s cubic-bezier(.25,.6,.3,1) .5s forwards; }
@@ -159,7 +168,8 @@ function buildSeries(days: DayHistory[], count: number): DailySeries {
   const endMs = Date.parse(`${activeDays.at(-1)}T00:00:00Z`);
   const F = Math.round((endMs - startMs) / 86_400_000) + 1;
   const frameAt = new Map(activeDays.map((d, i) => [d, i]));
-  const dayDate = (j: number) => new Date(startMs + j * 86_400_000).toISOString().slice(0, 10);
+  const dayDate = (j: number) =>
+    new Date(startMs + j * 86_400_000).toISOString().slice(0, 10);
 
   const calendar: Record<string, number>[] = [];
   const totals: number[] = [];
@@ -174,7 +184,9 @@ function buildSeries(days: DayHistory[], count: number): DailySeries {
   const xAt = (j: number) => BAR_X + (F > 1 ? (j / (F - 1)) * BAR_W : 0);
 
   // scale ticks
-  const g1Max = niceCeil(Math.max(curveLangs[0] ? (frames.at(-1)![curveLangs[0]!] ?? 1) : 1, 1));
+  const g1Max = niceCeil(
+    Math.max(curveLangs[0] ? (frames.at(-1)![curveLangs[0]!] ?? 1) : 1, 1),
+  );
   const g1Ticks: { y: number; label: string }[] = [0, 1, 2, 3, 4].map((i) => {
     const v = (g1Max / 4) * i;
     return {
@@ -231,7 +243,7 @@ function gridlines(
   top: number,
   h: number,
   ticks: { y: number; label: string }[],
-  startDelay: number
+  startDelay: number,
 ): string {
   let out = "";
   ticks.forEach((t, i) => {
@@ -247,22 +259,28 @@ function gridlines(
 export function languagesChart(
   stats: Stats | null,
   history: { days: DayHistory[] } | null,
-  opts: { theme: "light" | "dark"; count: number }
+  opts: { theme: "light" | "dark"; count: number },
 ): string {
   const theme = THEMES[opts.theme];
-  if ((!stats || stats.languages.length === 0) && (!history || history.days.length === 0)) {
+  if (
+    (!stats || stats.languages.length === 0) &&
+    (!history || history.days.length === 0)
+  ) {
     return card(
       theme,
       `<text class="fade" x="24" y="52" font-size="20" font-weight="600" fill="${theme.text}">GitHub Stats</text>
 <text class="fade" style="animation-delay:.15s" x="24" y="92" font-size="14" fill="${theme.muted}">No data yet — collecting stats.</text>
-<text class="fade" style="animation-delay:.3s" x="24" y="114" font-size="13" fill="${theme.muted}">Check back after the first snapshot.</text>`
+<text class="fade" style="animation-delay:.3s" x="24" y="114" font-size="13" fill="${theme.muted}">Check back after the first snapshot.</text>`,
     );
   }
 
-  const colorByLang = new Map((stats?.languages ?? []).map((l) => [l.name, l.color]));
+  const colorByLang = new Map(
+    (stats?.languages ?? []).map((l) => [l.name, l.color]),
+  );
   // vector site logo, theme-adaptive (fill follows the card theme)
   const logoK = LOGO_KNOBS.size / SITE_LOGO.w;
-  let body = `<g class="fade"><g class="spin" style="animation-delay:0s"><g transform="translate(${(WIDTH - LOGO_KNOBS.insetFromRight - LOGO_KNOBS.size / 2).toFixed(1)} ${LOGO_KNOBS.y}) scale(${logoK.toFixed(6)})"><g transform="${SITE_LOGO.transform}" fill="${theme.text}">${SITE_LOGO.body}</g></g></g></g>
+  // logo fades in 4th — right after star, fork, followers
+  let body = `<g class="fade" style="animation-delay:${(0.15 + 3 * 0.12).toFixed(2)}s"><g class="spin" style="animation-delay:0s"><g transform="translate(${(WIDTH - LOGO_KNOBS.insetFromRight - LOGO_KNOBS.size / 2).toFixed(1)} ${LOGO_KNOBS.y}) scale(${logoK.toFixed(6)})"><g transform="${SITE_LOGO.transform}" fill="${theme.text}">${SITE_LOGO.body}</g></g></g></g>
 <text class="fade title" x="24" y="42" font-size="21" fill="${theme.text}"><tspan class="gt">&gt;</tspan><tspan>&#160;bobbynooby</tspan></text>`;
   if (stats && stats.languages.length > 0) body += totalsRow(theme, stats);
 
@@ -273,7 +291,11 @@ export function languagesChart(
     const rest = stats.languages.slice(opts.count);
     segments = top.map((l) => ({ name: l.name, color: l.color, pct: l.pct }));
     if (rest.length > 0) {
-      segments.push({ name: "Other", color: theme.other, pct: rest.reduce((s, l) => s + l.pct, 0) });
+      segments.push({
+        name: "Other",
+        color: theme.other,
+        pct: rest.reduce((s, l) => s + l.pct, 0),
+      });
     }
     const clipId = `bar-${opts.theme}`;
     body += `\n<rect class="fade" style="animation-delay:.4s" x="${BAR_X}" y="${BAR_Y}" width="${BAR_W}" height="${BAR_H}" rx="5" fill="${theme.muted}" opacity="0.15"/>`;
@@ -341,7 +363,7 @@ ${logoGlyph(s.name, s.color, x, T1_Y, size)}
             y: g.top + g.h - (p / 100) * g.h,
             label: `${p}%`,
           })),
-          2.1
+          2.1,
         );
       }
       body += `\n<line class="fade" style="animation-delay:${(LINE_START + 0.1).toFixed(2)}s" x1="${BAR_X}" y1="${g.top + g.h}" x2="${BAR_X + BAR_W}" y2="${g.top + g.h}" stroke="${theme.muted}" stroke-opacity="0.3"/>`;
@@ -370,7 +392,10 @@ ${logoGlyph(s.name, s.color, x, T1_Y, size)}
     }
     tiles = Object.entries(cum)
       .sort((a, b) => b[1] - a[1])
-      .map(([name]) => ({ name, color: colorByLang.get(name) ?? FALLBACK_COLORS[0]! }))
+      .map(([name]) => ({
+        name,
+        color: colorByLang.get(name) ?? FALLBACK_COLORS[0]!,
+      }))
       .filter((t) => hasLogo(t.name));
   } else if (stats && stats.languages.length > 0) {
     tiles = stats.languages.map((l) => ({ name: l.name, color: l.color }));
