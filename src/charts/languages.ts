@@ -1,5 +1,6 @@
 import type { DayHistory, Stats } from "../api";
 import { CASCADIA_600, QUICKSAND_300 } from "../font";
+import { LOGO_WHITE } from "../logo";
 import { THEMES, hasLogo, icon, logoGlyph, type Theme } from "./parts";
 
 // layout: 1 header · 2 bar · 3 selected tiles+pct · 4 two graphs · 5 all-language tiles
@@ -25,23 +26,23 @@ const STYLE = `<style>
   .fade { animation: fadein .4s ease-out both; }
   .rise { opacity: 0; animation: rise .5s cubic-bezier(.22,1,.36,1) both; }
   .line { stroke-dasharray: 1; stroke-dashoffset: 1; opacity: 0; animation: draw 1.1s ease-out both; }
-  .pulse { animation: pulse 2.4s ease-in-out 2.4s infinite; }
+  .spin { transform-box: fill-box; transform-origin: center; animation: spin 8s linear infinite; }
   @keyframes fill { to { transform: scaleX(1); } }
   @keyframes pop { from { opacity: 0; transform: scale(0); } to { opacity: 1; transform: scale(1); } }
   @keyframes fadein { from { opacity: 0; } }
   @keyframes rise { from { opacity: 0; transform: translateY(9px); } to { opacity: 1; transform: translateY(0); } }
   @keyframes draw { to { stroke-dashoffset: 0; opacity: 1; } }
-  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
+  @keyframes spin { to { transform: rotate(360deg); } }
   @media (prefers-reduced-motion: reduce) {
     .fill { transform: scaleX(1); animation: none; }
     .pop, .fade, .rise { animation-duration: .01s; animation-delay: 0s !important; }
     .line { animation-duration: .01s; }
-    .pulse { animation: none; }
+    .spin { animation: none; }
   }
 </style>`;
 
 function card(theme: Theme, body: string): string {
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}">
+  return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}">
 <style>
 @font-face { font-family: 'Cascadia Code'; src: url(${CASCADIA_600}) format('woff2'); }
 @font-face { font-family: 'Quicksand'; src: url(${QUICKSAND_300}) format('woff2'); }
@@ -241,7 +242,8 @@ export function languagesChart(
   }
 
   const colorByLang = new Map((stats?.languages ?? []).map((l) => [l.name, l.color]));
-  let body = `<circle class="pulse" cx="${WIDTH - 26}" cy="35" r="5" fill="#3fb950"/>
+  let body = `<circle cx="${WIDTH - 34}" cy="42" r="17" fill="#0d1117" stroke="${theme.border}"/>
+<image class="spin" href="${LOGO_WHITE}" xlink:href="${LOGO_WHITE}" x="${WIDTH - 34 - 11}" y="42 - 11" width="22" height="22"/>
 <text class="fade title" x="24" y="42" font-size="21" fill="${theme.text}"><tspan class="gt">&gt;</tspan><tspan>&#160;bobbynooby</tspan></text>`;
   if (stats && stats.languages.length > 0) body += totalsRow(theme, stats);
 
