@@ -1,5 +1,6 @@
 import type { Stats } from "../api";
 import { LOGOS } from "../logos";
+import { CASCADIA_600 } from "../font";
 
 export interface Theme {
   bg: string;
@@ -102,7 +103,11 @@ const STYLE = `<style>
 
 function card(theme: Theme, body: string): string {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}">
-<style>text { font-family: 'Segoe UI', Ubuntu, 'Helvetica Neue', sans-serif; }</style>
+<style>
+@font-face { font-family: 'Cascadia Code'; src: url(${CASCADIA_600}) format('woff2'); }
+text { font-family: 'Segoe UI', Ubuntu, 'Helvetica Neue', sans-serif; }
+.title { font-family: 'Cascadia Code', 'Cascadia Mono', ui-monospace, Menlo, Consolas, monospace; }
+</style>
 ${STYLE}
 <rect x="1" y="1" width="${WIDTH - 2}" height="${HEIGHT - 2}" rx="6" fill="${theme.bg}" stroke="${theme.border}"/>
 ${body}
@@ -157,7 +162,7 @@ export function languagesChart(
 
   const clipId = `bar-${opts.theme}`;
   let body = `<circle class="pulse" cx="${WIDTH - 26}" cy="35" r="5" fill="#3fb950"/>
-<text class="fade" x="24" y="42" font-size="20" font-weight="600" fill="${theme.text}">Top Languages</text>`;
+<text class="fade title" x="24" y="42" font-size="20" fill="${theme.text}">&gt;top-languages</text>`;
 
   // stacked bar: track + segments revealed left-to-right
   body += `<rect x="${BAR_X}" y="${BAR_Y}" width="${BAR_W}" height="${BAR_H}" rx="5" fill="${theme.muted}" opacity="0.15"/>`;
