@@ -191,12 +191,38 @@ export function evolutionChart(
   let x = BAR_X + (BAR_W - rowW) / 2;
   segments.forEach((seg) => {
     const delay = BEGIN + seg.firstFrame * frameDur;
-    const label = seg.name === "Other" ? "" : `${Math.round(seg.finalPct)}%`;
     body += `\n<g class="pop" style="animation-delay:${delay.toFixed(2)}s">
 <rect x="${x}" y="${BLOCK_Y}" width="${size}" height="${size}" rx="6" fill="${seg.color}"/>
 ${logoGlyph(seg.name, seg.color, x, BLOCK_Y, size)}
-</g>
-<text class="fade" style="animation-delay:${(delay + 0.25).toFixed(2)}s" x="${(x + size / 2).toFixed(1)}" y="${BLOCK_Y + size + 15}" font-size="10" text-anchor="middle" fill="${theme.muted}">${label}</text>`;
+</g>`;
+
+    if (seg.name === "Other") {
+      x += size + gap;
+      return;
+    }
+
+    // counting pct label: one discrete text per run of equal rounded values,
+    // so the number ticks up/down in sync with the bar morphing
+    const runs: { v: number; from: number; to: number }[] = [];
+    let cur: { v: number; from: number } | null = null;
+    for (let f = seg.firstFrame; f < F; f++) {
+      const v = Math.round((seg.widths[f] / BAR_W) * 100);
+      if (!cur || cur.v !== v) {
+        if (cur) runs.push({ v: cur.v, from: cur.from, to: f });
+        cur = { v, from: f };
+      }
+    }
+    if (cur) runs.push({ v: cur.v, from: cur.from, to: F });
+
+    for (const r of runs) {
+      if (r.v < 1) continue;
+      const t0 = (BEGIN + r.from * frameDur).toFixed(2);
+      const t1 = (BEGIN + r.to * frameDur).toFixed(2);
+      const isLast = r.to === F;
+      const values = isLast ? "0;1" : "0;1;0";
+      const keyT = isLast ? `0;${t0}` : `0;${t0};${t1}`;
+      body += `\n<text x="${(x + size / 2).toFixed(1)}" y="${BLOCK_Y + size + 15}" font-size="10" text-anchor="middle" fill="${theme.muted}" opacity="0"><animate attributeName="opacity" calcMode="discrete" values="${values}" keyTimes="${keyT}" dur="${dur}s" begin="${BEGIN}s" fill="freeze"/>${r.v}%</text>`;
+    }
     x += size + gap;
   });
 
