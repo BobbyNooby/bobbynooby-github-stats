@@ -15,9 +15,27 @@ export type StatsResult =
   | { ok: true; stats: Stats; stale: boolean }
   | { ok: false };
 
+export interface LangHistoryEntry {
+  language: string;
+  commits: number;
+  added: number;
+  deleted: number;
+}
+
+export interface MonthHistory {
+  month: string;
+  languages: LangHistoryEntry[];
+}
+
+export type LangHistoryResult =
+  | { ok: true; months: MonthHistory[]; stale: boolean }
+  | { ok: false };
+
 export class StatsClient {
   private cache: Stats | null = null;
   private fetchedAt = 0;
+  private histCache: MonthHistory[] | null = null;
+  private histFetchedAt = 0;
   private readonly baseUrl: string;
   private readonly ttlMs: number;
 
@@ -46,6 +64,31 @@ export class StatsClient {
       console.error("[github-stats-charts] stats fetch failed:", err instanceof Error ? err.message : err);
       if (this.cache) {
         return { ok: true, stats: this.cache, stale: true };
+      }
+      return { ok: false };
+    }
+  }
+
+  async getLangHistory(): Promise<LangHistoryResult> {
+    const fresh = this.histCache && Date.now() - this.histFetchedAt < this.ttlMs;
+    if (fresh && this.histCache) {
+      return { ok: true, months: this.histCache, stale: false };
+    }
+    try {
+      const res = await fetch(`${this.baseUrl}/api/lang-history`, {
+        headers: { Accept: "application/json" },
+        signal: AbortSignal.timeout(15_000),
+      });
+      if (!res.ok) throw new Error(`lang-history HTTP ${res.status}`);
+      const json = (await res.json()) as { months: MonthHistory[] };
+      if (!json || !Array.isArray(json.months)) throw new Error("unexpected shape");
+      this.histCache = json.months;
+      this.histFetchedAt = Date.now();
+      return { ok: true, months: json.months, stale: false };
+    } catch (err) {
+      console.error("[github-stats-charts] lang-history fetch failed:", err instanceof Error ? err.message : err);
+      if (this.histCache) {
+        return { ok: true, months: this.histCache, stale: true };
       }
       return { ok: false };
     }
