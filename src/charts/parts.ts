@@ -67,6 +67,9 @@ const NAME_TO_SLUG: Record<string, string> = {
   haskell: "haskell",
   scala: "scala",
   gdscript: "godotengine",
+  docker: "docker",
+  markdown: "markdown",
+  scss: "sass",
 };
 
 export function hasLogo(name: string): boolean {
