@@ -28,7 +28,7 @@ export function createServer(client: StatsClient, defaultTheme: "light" | "dark"
       return svg(
         languagesChart(
           stats.ok ? stats.stats : null,
-          history.ok ? { months: history.months } : null,
+          history.ok ? { days: history.days } : null,
           { theme, count }
         )
       );

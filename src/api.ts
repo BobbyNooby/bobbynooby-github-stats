@@ -1,20 +1,3 @@
-export interface LangStat {
-  name: string;
-  bytes: number;
-  color: string;
-  pct: number;
-}
-
-export interface Stats {
-  taken_at: string;
-  languages: LangStat[];
-  totals: { stars: number; forks: number; followers: number; repos: number };
-}
-
-export type StatsResult =
-  | { ok: true; stats: Stats; stale: boolean }
-  | { ok: false };
-
 export interface LangHistoryEntry {
   language: string;
   commits: number;
@@ -22,19 +5,36 @@ export interface LangHistoryEntry {
   deleted: number;
 }
 
-export interface MonthHistory {
-  month: string;
+export interface DayHistory {
+  day: string;
   languages: LangHistoryEntry[];
 }
 
 export type LangHistoryResult =
-  | { ok: true; months: MonthHistory[]; stale: boolean }
+  | { ok: true; days: DayHistory[]; stale: boolean }
+  | { ok: false };
+
+export interface Stats {
+  taken_at: string;
+  languages: LangStat[];
+  totals: { stars: number; forks: number; followers: number; repos: number };
+}
+
+export interface LangStat {
+  name: string;
+  bytes: number;
+  color: string;
+  pct: number;
+}
+
+export type StatsResult =
+  | { ok: true; stats: Stats; stale: boolean }
   | { ok: false };
 
 export class StatsClient {
   private cache: Stats | null = null;
   private fetchedAt = 0;
-  private histCache: MonthHistory[] | null = null;
+  private histCache: DayHistory[] | null = null;
   private histFetchedAt = 0;
   private readonly baseUrl: string;
   private readonly ttlMs: number;
@@ -72,7 +72,7 @@ export class StatsClient {
   async getLangHistory(): Promise<LangHistoryResult> {
     const fresh = this.histCache && Date.now() - this.histFetchedAt < this.ttlMs;
     if (fresh && this.histCache) {
-      return { ok: true, months: this.histCache, stale: false };
+      return { ok: true, days: this.histCache, stale: false };
     }
     try {
       const res = await fetch(`${this.baseUrl}/api/lang-history`, {
@@ -80,15 +80,15 @@ export class StatsClient {
         signal: AbortSignal.timeout(15_000),
       });
       if (!res.ok) throw new Error(`lang-history HTTP ${res.status}`);
-      const json = (await res.json()) as { months: MonthHistory[] };
-      if (!json || !Array.isArray(json.months)) throw new Error("unexpected shape");
-      this.histCache = json.months;
+      const json = (await res.json()) as { days: DayHistory[] };
+      if (!json || !Array.isArray(json.days)) throw new Error("unexpected shape");
+      this.histCache = json.days;
       this.histFetchedAt = Date.now();
-      return { ok: true, months: json.months, stale: false };
+      return { ok: true, days: json.days, stale: false };
     } catch (err) {
       console.error("[github-stats-charts] lang-history fetch failed:", err instanceof Error ? err.message : err);
       if (this.histCache) {
-        return { ok: true, months: this.histCache, stale: true };
+        return { ok: true, days: this.histCache, stale: true };
       }
       return { ok: false };
     }

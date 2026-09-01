@@ -1,17 +1,20 @@
-import type { MonthHistory, Stats } from "../api";
+import type { DayHistory, Stats } from "../api";
 import { CASCADIA_600, QUICKSAND_300 } from "../font";
-import { THEMES, esc, icon, logoGlyph, type Theme } from "./parts";
+import { THEMES, icon, logoGlyph, type Theme } from "./parts";
 
+// layout: 1 header · 2 bar · 3 selected tiles+pct · 4 two graphs · 5 all-language tiles
 const WIDTH = 830;
-const HEIGHT = 230;
+const HEIGHT = 344;
 const BAR_X = 24;
 const BAR_W = WIDTH - 48;
-const BAR_Y = 54;
+const BAR_Y = 58;
 const BAR_H = 22;
-const PLOT_TOP = 92;
-const PLOT_H = 52;
-const PLOT_BOTTOM = PLOT_TOP + PLOT_H;
-const TILE_Y = 168;
+const T1_Y = 94; // selected tiles
+const G1_TOP = 170;
+const G1_H = 38;
+const G2_TOP = 232;
+const G2_H = 38;
+const T2_Y = 296; // all-language tiles
 
 const NON_LANGS = new Set(["Config", "Other"]);
 const FALLBACK_COLORS = ["#3178c6", "#f1e05a", "#3572A5", "#b07219", "#ff3e00", "#00ADD8", "#7355dd", "#89e051"];
@@ -21,7 +24,7 @@ const STYLE = `<style>
   .pop { transform-box: fill-box; transform-origin: center; animation: pop .45s cubic-bezier(.34,1.56,.64,1) both; }
   .fade { animation: fadein .4s ease-out both; }
   .rise { opacity: 0; animation: rise .5s cubic-bezier(.22,1,.36,1) both; }
-  .line { stroke-dasharray: 1; stroke-dashoffset: 1; animation: draw 1.2s ease-out both; }
+  .line { stroke-dasharray: 1; stroke-dashoffset: 1; animation: draw 1.1s ease-out both; }
   .pulse { animation: pulse 2.4s ease-in-out 2.4s infinite; }
   @keyframes fill { to { transform: scaleX(1); } }
   @keyframes pop { from { opacity: 0; transform: scale(0); } to { opacity: 1; transform: scale(1); } }
@@ -45,6 +48,7 @@ function card(theme: Theme, body: string): string {
 text { font-family: 'Segoe UI', Ubuntu, 'Helvetica Neue', sans-serif; }
 .title { font-family: 'Quicksand', 'Segoe UI', sans-serif; font-weight: 300; }
 .title .gt { font-family: 'Cascadia Code', 'Cascadia Mono', ui-monospace, Menlo, Consolas, monospace; }
+.label { letter-spacing: 1px; }
 </style>
 ${STYLE}
 <rect x="1" y="1" width="${WIDTH - 2}" height="${HEIGHT - 2}" rx="6" fill="${theme.bg}" stroke="${theme.border}"/>
@@ -52,16 +56,8 @@ ${body}
 </svg>`;
 }
 
-function noData(theme: Theme): string {
-  return card(
-    theme,
-    `<text class="fade" x="24" y="52" font-size="20" font-weight="600" fill="${theme.text}">GitHub Stats</text>
-<text class="fade" style="animation-delay:.15s" x="24" y="92" font-size="14" fill="${theme.muted}">No data yet — collecting stats.</text>
-<text class="fade" style="animation-delay:.3s" x="24" y="114" font-size="13" fill="${theme.muted}">Check back after the first snapshot.</text>`
-  );
-}
-
-function totalsRow(theme: Theme, stats: Stats): string {
+// section 1 — header
+function header(theme: Theme, stats: Stats): string {
   const pairs = [
     { icon: "star", value: stats.totals.stars },
     { icon: "fork", value: stats.totals.forks },
@@ -77,7 +73,8 @@ function totalsRow(theme: Theme, stats: Stats): string {
   const rightEdge = WIDTH - 44;
   let ix = rightEdge - totalsW;
   const iconY = 42 - ICON_SIZE + 3;
-  let out = "";
+  let out = `<circle class="pulse" cx="${WIDTH - 26}" cy="35" r="5" fill="#3fb950"/>
+<text class="fade title" x="24" y="42" font-size="21" fill="${theme.text}"><tspan class="gt">&gt;</tspan><tspan>&#160;bobbynooby</tspan></text>`;
   pairs.forEach((p, i) => {
     const delay = (0.15 + i * 0.12).toFixed(2);
     out += `\n<g class="rise" style="animation-delay:${delay}s">`;
@@ -89,72 +86,128 @@ function totalsRow(theme: Theme, stats: Stats): string {
   return out;
 }
 
-function historyLines(
-  theme: Theme,
-  months: MonthHistory[],
-  colorByLang: Map<string, string>,
-  lineStart: number
-): { paths: string; axis: string; langOrder: string[] } {
-  const F = months.length;
+interface Series {
+  langOrder: string[];
+  curves: {
+    lang: string;
+    color: string;
+    linePts: string;
+    sharePts: string;
+    finalShare: number;
+  }[];
+  yearTicks: { x: number; year: string }[];
+}
+
+// section 4 data — daily cumulative series per language
+function buildSeries(days: DayHistory[], count: number): Series {
   const cum: Record<string, number> = {};
   const frames: Record<string, number>[] = [];
-  for (const m of months) {
-    for (const l of m.languages) {
+  const activeDays: string[] = [];
+  for (const d of days) {
+    for (const l of d.languages) {
       if (NON_LANGS.has(l.language)) continue;
       cum[l.language] = (cum[l.language] ?? 0) + l.added;
     }
     frames.push({ ...cum });
+    activeDays.push(d.day);
   }
 
   const langOrder = Object.entries(frames.at(-1) ?? {})
     .sort((a, b) => b[1] - a[1])
     .map(([l]) => l);
-  const curveLangs = langOrder.slice(0, 6);
-  const maxVal = Math.max(...curveLangs.map((l) => frames.at(-1)![l] ?? 0), 1);
+  const curveLangs = langOrder.slice(0, count);
 
-  const xAt = (i: number) => BAR_X + (F > 1 ? (i / (F - 1)) * BAR_W : 0);
-  const yAt = (v: number) => PLOT_BOTTOM - (v / maxVal) * PLOT_H;
+  const startMs = Date.parse(`${activeDays[0]}T00:00:00Z`);
+  const endMs = Date.parse(`${activeDays.at(-1)}T00:00:00Z`);
+  const F = Math.round((endMs - startMs) / 86_400_000) + 1;
+  const frameAt = new Map(activeDays.map((d, i) => [d, i]));
 
-  let paths = "";
-  curveLangs.forEach((lang, li) => {
-    const pts = frames.map((frame, i) => `${xAt(i).toFixed(1)},${yAt(frame[lang] ?? 0).toFixed(1)}`).join(" ");
-    const color = colorByLang.get(lang) ?? FALLBACK_COLORS[li % FALLBACK_COLORS.length]!;
-    paths += `\n<polyline class="line" style="animation-delay:${(lineStart + li * 0.15).toFixed(2)}s" points="${pts}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" pathLength="1"/>`;
+  const dayDate = (j: number) => new Date(startMs + j * 86_400_000).toISOString().slice(0, 10);
+  const step = Math.max(1, Math.ceil(F / 365));
+  const indices: number[] = [];
+  for (let j = 0; j < F; j += step) indices.push(j);
+  if (indices.at(-1) !== F - 1) indices.push(F - 1);
+
+  const xAt = (j: number) => BAR_X + (F > 1 ? (j / (F - 1)) * BAR_W : 0);
+  const yearTicks: { x: number; year: string }[] = [];
+  let lastTickX = -999;
+  for (let j = 0; j < F; j++) {
+    const d = dayDate(j);
+    if (d.endsWith("-01-01") || j === 0) {
+      const x = xAt(j);
+      if (x - lastTickX >= 40) {
+        yearTicks.push({ x, year: d.slice(0, 4) });
+        lastTickX = x;
+      }
+    }
+  }
+
+  let curCum: Record<string, number> = {};
+  let curFrameIdx = -1;
+  const sample = (j: number) => {
+    if (frameAt.has(dayDate(j))) {
+      const idx = frameAt.get(dayDate(j))!;
+      if (idx >= curFrameIdx) {
+        curCum = frames[idx] ?? curCum;
+        curFrameIdx = idx;
+      }
+    }
+    const total = Object.values(curCum).reduce((s, v) => s + v, 0);
+    return { curCum, total };
+  };
+
+  const maxLines = Math.max(curveLangs[0] ? (frames.at(-1)![curveLangs[0]!] ?? 1) : 1, 1);
+  const curves = curveLangs.map((lang, li) => {
+    const linePts: string[] = [];
+    const sharePts: string[] = [];
+    for (const j of indices) {
+      const { curCum, total } = sample(j);
+      const v = curCum[lang] ?? 0;
+      linePts.push(
+        `${xAt(j).toFixed(1)},${(G1_TOP + G1_H - (v / maxLines) * G1_H).toFixed(1)}`
+      );
+      sharePts.push(
+        `${xAt(j).toFixed(1)},${(G2_TOP + G2_H - ((total > 0 ? (v / total) * 100 : 0) / 100) * G2_H).toFixed(1)}`
+      );
+    }
+    const finalTotal = frames.at(-1)![lang] ?? 0;
+    const grandFinal = Object.values(frames.at(-1)!).reduce((s, v) => s + v, 0);
+    return {
+      lang,
+      color: FALLBACK_COLORS[li % FALLBACK_COLORS.length]!,
+      linePts: linePts.join(" "),
+      sharePts: sharePts.join(" "),
+      finalShare: grandFinal > 0 ? (finalTotal / grandFinal) * 100 : 0,
+    };
   });
 
-  // year ticks on the axis
-  let axis = `\n<line x1="${BAR_X}" y1="${PLOT_BOTTOM}" x2="${BAR_X + BAR_W}" y2="${PLOT_BOTTOM}" stroke="${theme.muted}" stroke-opacity="0.3"/>`;
-  months.forEach((m, i) => {
-    if (!m.month.endsWith("-01")) return;
-    axis += `\n<text class="fade" style="animation-delay:${(lineStart + 1).toFixed(2)}s" x="${xAt(i).toFixed(1)}" y="${PLOT_BOTTOM + 14}" font-size="10" text-anchor="middle" fill="${theme.muted}">${m.month.slice(0, 4)}</text>`;
-  });
-
-  return { paths, axis, langOrder };
+  return { langOrder, curves, yearTicks };
 }
 
 export function languagesChart(
   stats: Stats | null,
-  history: { months: MonthHistory[] } | null,
+  history: { days: DayHistory[] } | null,
   opts: { theme: "light" | "dark"; count: number }
 ): string {
   const theme = THEMES[opts.theme];
-  if ((!stats || stats.languages.length === 0) && (!history || history.months.length === 0)) {
-    return noData(theme);
+  if ((!stats || stats.languages.length === 0) && (!history || history.days.length === 0)) {
+    return card(
+      theme,
+      `<text class="fade" x="24" y="52" font-size="20" font-weight="600" fill="${theme.text}">GitHub Stats</text>
+<text class="fade" style="animation-delay:.15s" x="24" y="92" font-size="14" fill="${theme.muted}">No data yet — collecting stats.</text>
+<text class="fade" style="animation-delay:.3s" x="24" y="114" font-size="13" fill="${theme.muted}">Check back after the first snapshot.</text>`
+    );
   }
 
   const colorByLang = new Map((stats?.languages ?? []).map((l) => [l.name, l.color]));
-  let body = `<circle class="pulse" cx="${WIDTH - 26}" cy="35" r="5" fill="#3fb950"/>
-<text class="fade title" x="24" y="42" font-size="21" fill="${theme.text}"><tspan class="gt">&gt;</tspan><tspan>&#160;bobbynooby</tspan></text>`;
+  let body = header(theme, stats as Stats);
 
-  if (stats && stats.languages.length > 0) {
-    body += totalsRow(theme, stats);
-  }
-
-  // current-allocation bar, load-in fill
+  // section 2 — current-allocation bar
+  let segments: { name: string; color: string; pct: number }[] = [];
   if (stats && stats.languages.length > 0) {
     const top = stats.languages.slice(0, opts.count);
     const rest = stats.languages.slice(opts.count);
-    const segments = top.map((l) => ({ name: l.name, color: l.color, pct: l.pct }));
+    segments = top.map((l) => ({ name: l.name, color: l.color, pct: l.pct }));
     if (rest.length > 0) {
       segments.push({ name: "Other", color: theme.other, pct: rest.reduce((s, l) => s + l.pct, 0) });
     }
@@ -171,35 +224,77 @@ export function languagesChart(
     body += `\n</g></g>`;
   }
 
-  // history line chart below the bar
-  let langOrder: string[] = [];
-  let tiles: { name: string; color: string }[] = [];
-  const LINE_START = 1.9;
-  if (history && history.months.length > 0) {
-    body += `\n<text class="fade" style="animation-delay:${LINE_START.toFixed(2)}s" x="24" y="${PLOT_TOP - 8}" font-size="11" font-weight="600" fill="${theme.muted}">LINES OF CODE OVER TIME</text>`;
-    const { paths, axis, langOrder: order } = historyLines(theme, history.months, colorByLang, LINE_START + 0.1);
-    body += paths + axis;
-    langOrder = order;
-    tiles = langOrder.map((name) => ({ name, color: colorByLang.get(name) ?? FALLBACK_COLORS[0]! }));
+  // section 3 — selected tiles with pct, Other last
+  const POP_START = 1.8;
+  if (segments.length > 0) {
+    const n = segments.length;
+    const gap = 8;
+    const size = Math.min(34, Math.floor((BAR_W - (n - 1) * gap) / n));
+    const rowW = n * size + (n - 1) * gap;
+    let x = BAR_X + (BAR_W - rowW) / 2;
+    segments.forEach((s, i) => {
+      const delay = (POP_START + i * 0.12).toFixed(2);
+      body += `\n<g class="pop" style="animation-delay:${delay}s">
+<rect x="${x.toFixed(1)}" y="${T1_Y}" width="${size}" height="${size}" rx="6" fill="${s.color}"/>
+${logoGlyph(s.name, s.color, x, T1_Y, size)}
+</g>
+<text class="fade" style="animation-delay:${(Number(delay) + 0.25).toFixed(2)}s" x="${(x + size / 2).toFixed(1)}" y="${T1_Y + size + 13}" font-size="10" text-anchor="middle" fill="${theme.muted}">${s.pct >= 1 ? `${Math.round(s.pct)}%` : "—"}</text>`;
+      x += size + gap;
+    });
   }
 
-  // all languages as logo tiles below the graph
-  if (tiles.length === 0 && stats && stats.languages.length > 0) {
+  // section 4 — the two line graphs
+  const LINE_START = 2.3;
+  if (history && history.days.length > 0) {
+    const { curves, yearTicks } = buildSeries(history.days, 6);
+    const graphs = [
+      { label: "LINES OF CODE OVER TIME", top: G1_TOP, h: G1_H },
+      { label: "SHARE OF MY CODE OVER TIME (%)", top: G2_TOP, h: G2_H },
+    ];
+    graphs.forEach((g, gi) => {
+      body += `\n<text class="fade label" style="animation-delay:${LINE_START.toFixed(2)}s" x="24" y="${g.top - 8}" font-size="10" font-weight="600" fill="${theme.muted}">${g.label}</text>`;
+      body += `\n<line x1="${BAR_X}" y1="${g.top + g.h}" x2="${BAR_X + BAR_W}" y2="${g.top + g.h}" stroke="${theme.muted}" stroke-opacity="0.3"/>`;
+      curves.forEach((c, li) => {
+        const pts = gi === 0 ? c.linePts : c.sharePts;
+        const delay = (LINE_START + 0.2 + gi * 0.5 + li * 0.12).toFixed(2);
+        body += `\n<polyline class="line" style="animation-delay:${delay}s" points="${pts}" fill="none" stroke="${c.color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" pathLength="1"/>`;
+      });
+      if (gi === 1) {
+        for (const t of yearTicks) {
+          body += `\n<text class="fade" style="animation-delay:${(LINE_START + 1.4).toFixed(2)}s" x="${t.x.toFixed(1)}" y="${g.top + g.h + 15}" font-size="10" text-anchor="middle" fill="${theme.muted}">${t.year}</text>`;
+        }
+      }
+    });
+  }
+
+  // section 5 — every language, popping in
+  let tiles: { name: string; color: string }[] = [];
+  if (history && history.days.length > 0) {
+    const cum: Record<string, number> = {};
+    for (const d of history.days) {
+      for (const l of d.languages) {
+        if (NON_LANGS.has(l.language)) continue;
+        cum[l.language] = (cum[l.language] ?? 0) + l.added;
+      }
+    }
+    tiles = Object.entries(cum)
+      .sort((a, b) => b[1] - a[1])
+      .map(([name]) => ({ name, color: colorByLang.get(name) ?? FALLBACK_COLORS[0]! }));
+  } else if (stats && stats.languages.length > 0) {
     tiles = stats.languages.map((l) => ({ name: l.name, color: l.color }));
   }
-
   if (tiles.length > 0) {
     const n = tiles.length;
     const gap = 6;
     const size = Math.min(36, Math.floor((BAR_W - (n - 1) * gap) / n));
     const rowW = n * size + (n - 1) * gap;
     let x = BAR_X + (BAR_W - rowW) / 2;
-    const TILE_START = LINE_START + 1.3;
+    const TILE_START = LINE_START + 2.0;
     tiles.forEach((t, i) => {
-      const delay = (TILE_START + i * 0.06).toFixed(2);
+      const delay = (TILE_START + i * 0.05).toFixed(2);
       body += `\n<g class="pop" style="animation-delay:${delay}s">
-<rect x="${x.toFixed(1)}" y="${TILE_Y}" width="${size}" height="${size}" rx="6" fill="${t.color}"/>
-${logoGlyph(t.name, t.color, x, TILE_Y, size)}
+<rect x="${x.toFixed(1)}" y="${T2_Y}" width="${size}" height="${size}" rx="6" fill="${t.color}"/>
+${logoGlyph(t.name, t.color, x, T2_Y, size)}
 </g>`;
       x += size + gap;
     });
