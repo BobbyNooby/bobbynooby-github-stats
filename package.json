@@ -1,7 +1,7 @@
 {
   "name": "github-stats-charts",
   "version": "0.1.0",
-  "description": "Stateless SVG chart renderer for github-stats-cron. Fetches stats from the API and serves embeddable SVG charts.",
+  "description": "Animated GitHub profile card SVG — language bar, daily line graphs, logo tiles. Served live by Elysia, powered by github-stats-cron.",
   "type": "module",
   "scripts": {
     "dev": "bun run src/index.ts",
