@@ -277,16 +277,24 @@ export function languagesChart(
     let x = BAR_X + (BAR_W - rowW) / 2;
     segments.forEach((s, i) => {
       const delay = (POP_START + i * 0.12).toFixed(2);
-      // the catch-all bucket has no logo — bar carries it, tiles skip it
+      const pctLabel = s.pct >= 1 ? `${Math.round(s.pct)}%` : "—";
+
+      // the catch-all bucket has no logo — a muted glyph tile instead
       if (s.name === "Other") {
+        body += `\n<g class="pop" style="animation-delay:${delay}s">
+<rect x="${x.toFixed(1)}" y="${T1_Y}" width="${size}" height="${size}" rx="6" fill="${s.color}"/>
+<text x="${(x + size / 2).toFixed(1)}" y="${T1_Y + size / 2 + size * 0.14}" font-size="${(size * 0.4).toFixed(1)}" font-weight="700" text-anchor="middle" fill="#ffffff">···</text>
+</g>
+<text class="fade" style="animation-delay:${(Number(delay) + 0.25).toFixed(2)}s" x="${(x + size / 2).toFixed(1)}" y="${T1_Y + size + 13}" font-size="10" text-anchor="middle" fill="${theme.muted}">${pctLabel}</text>`;
         x += size + gap;
         return;
       }
+
       body += `\n<g class="pop" style="animation-delay:${delay}s">
 <rect x="${x.toFixed(1)}" y="${T1_Y}" width="${size}" height="${size}" rx="6" fill="${s.color}"/>
 ${logoGlyph(s.name, s.color, x, T1_Y, size)}
 </g>
-<text class="fade" style="animation-delay:${(Number(delay) + 0.25).toFixed(2)}s" x="${(x + size / 2).toFixed(1)}" y="${T1_Y + size + 13}" font-size="10" text-anchor="middle" fill="${theme.muted}">${s.pct >= 1 ? `${Math.round(s.pct)}%` : "—"}</text>`;
+<text class="fade" style="animation-delay:${(Number(delay) + 0.25).toFixed(2)}s" x="${(x + size / 2).toFixed(1)}" y="${T1_Y + size + 13}" font-size="10" text-anchor="middle" fill="${theme.muted}">${pctLabel}</text>`;
       x += size + gap;
     });
   }
