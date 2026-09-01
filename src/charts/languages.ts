@@ -59,6 +59,17 @@ function esc(s: string): string {
     .replaceAll('"', "&quot;");
 }
 
+// lucide-style 24x24 stroke icons (ISC license, lucide.dev)
+const ICONS: Record<string, string> = {
+  star: '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
+  fork: '<circle cx="12" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><circle cx="18" cy="6" r="3"/><path d="M18 9v1a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V9"/>',
+  person: '<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+};
+
+function icon(name: string, x: number, y: number, size: number, color: string): string {
+  return `<g transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) scale(${(size / 24).toFixed(4)})" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICONS[name]}</g>`;
+}
+
 function isLight(hex: string): boolean {
   const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
   if (!m) return false;
@@ -174,8 +185,30 @@ export function languagesChart(
     x += size + gap;
   });
 
-  const sub = `stars: ${stats.totals.stars} · followers: ${stats.totals.followers}`;
-  body += `\n<text class="fade" style="animation-delay:${(POP_START + n * 0.12 + 0.3).toFixed(2)}s" x="24" y="${HEIGHT - 14}" font-size="11" fill="${theme.muted}">${esc(sub)}</text>`;
+  // totals with icons, right-aligned on the title row
+  const pairs = [
+    { icon: "star", value: stats.totals.stars },
+    { icon: "fork", value: stats.totals.forks },
+    { icon: "person", value: stats.totals.followers },
+  ];
+  const ICON_SIZE = 15;
+  const ICON_TEXT_GAP = 5;
+  const PAIR_GAP = 20;
+  const textW = (v: number) => String(v).length * 7;
+  const totalsW =
+    pairs.reduce((w, p) => w + ICON_SIZE + ICON_TEXT_GAP + textW(p.value), 0) +
+    (pairs.length - 1) * PAIR_GAP;
+  const rightEdge = WIDTH - 44; // clears the pulse dot
+  let ix = rightEdge - totalsW;
+  const iconY = 42 - ICON_SIZE + 3;
+  const totalsDelay = (POP_START + n * 0.12 + 0.3).toFixed(2);
+  body += `\n<g class="fade" style="animation-delay:${totalsDelay}s">`;
+  pairs.forEach((p) => {
+    body += `\n${icon(p.icon, ix, iconY, ICON_SIZE, theme.muted)}`;
+    body += `\n<text x="${(ix + ICON_SIZE + ICON_TEXT_GAP).toFixed(1)}" y="42" font-size="13" fill="${theme.text}">${p.value}</text>`;
+    ix += ICON_SIZE + ICON_TEXT_GAP + textW(p.value) + PAIR_GAP;
+  });
+  body += `\n</g>`;
 
   return card(theme, body);
 }
