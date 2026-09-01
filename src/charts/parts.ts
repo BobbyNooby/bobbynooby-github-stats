@@ -44,7 +44,7 @@ const NAME_TO_SLUG: Record<string, string> = {
   typescript: "typescript",
   javascript: "javascript",
   python: "python",
-  java: "openjdk",
+  java: "java",
   "c#": "csharp",
   c: "c",
   "c++": "cplusplus",
@@ -77,15 +77,22 @@ export function hasLogo(name: string): boolean {
   return slug !== undefined && LOGOS[slug] !== undefined;
 }
 
+// non-square icons (e.g. Font Awesome java, 384x512); everything else is 24x24
+export const LOGO_VIEWBOX: Record<string, [number, number]> = {
+  java: [384, 512],
+};
+
 export function logoGlyph(name: string, color: string, x: number, y: number, size: number): string {
   const slug = NAME_TO_SLUG[name.toLowerCase()];
   const path = slug ? LOGOS[slug] : undefined;
   const glyphColor = isLight(color) ? "#1f2328" : "#ffffff";
 
   if (path) {
-    const k = (size * 0.58) / 24;
-    const inset = (size - 24 * k) / 2;
-    return `<path d="${path}" fill="${glyphColor}" transform="translate(${(x + inset).toFixed(2)} ${(y + inset).toFixed(2)}) scale(${k.toFixed(4)})"/>`;
+    const [vw, vh] = (slug && LOGO_VIEWBOX[slug]) || [24, 24];
+    const k = (size * 0.58) / Math.max(vw, vh);
+    const insetX = (size - vw * k) / 2;
+    const insetY = (size - vh * k) / 2;
+    return `<path d="${path}" fill="${glyphColor}" transform="translate(${(x + insetX).toFixed(2)} ${(y + insetY).toFixed(2)}) scale(${k.toFixed(4)})"/>`;
   }
   return `<text x="${x + size / 2}" y="${y + size / 2 + size * 0.18}" font-size="${(size * 0.44).toFixed(1)}" font-weight="700" text-anchor="middle" fill="${glyphColor}">${esc(name[0].toUpperCase())}</text>`;
 }

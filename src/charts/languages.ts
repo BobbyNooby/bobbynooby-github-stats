@@ -4,17 +4,17 @@ import { THEMES, hasLogo, icon, logoGlyph, type Theme } from "./parts";
 
 // layout: 1 header · 2 bar · 3 selected tiles+pct · 4 two graphs · 5 all-language tiles
 const WIDTH = 830;
-const HEIGHT = 402;
+const HEIGHT = 468;
 const BAR_X = 24;
 const BAR_W = WIDTH - 48;
 const BAR_Y = 58;
 const BAR_H = 22;
 const T1_Y = 94; // selected tiles
-const G1_TOP = 170;
-const G1_H = 70;
-const G2_TOP = 258;
-const G2_H = 70;
-const T2_Y = 354; // all-language tiles
+const G1_TOP = 174;
+const G1_H = 86;
+const G2_TOP = 304;
+const G2_H = 86;
+const T2_Y = 420; // all-language tiles
 
 const NON_LANGS = new Set(["Config", "Other"]);
 const FALLBACK_COLORS = ["#3178c6", "#f1e05a", "#3572A5", "#b07219", "#ff3e00", "#00ADD8", "#7355dd", "#89e051"];
@@ -87,8 +87,28 @@ function totalsRow(theme: Theme, stats: Stats): string {
 interface Curve {
   lang: string;
   color: string;
-  linePts: string;
-  sharePts: string;
+  linePath: string;
+  sharePath: string;
+}
+
+// Catmull-Rom -> cubic Bézier: smooth curves through every point
+function smoothPath(pts: { x: number; y: number }[]): string {
+  if (pts.length < 3) {
+    return `M ${pts.map((p) => `${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(" L ")}`;
+  }
+  let d = `M ${pts[0]!.x.toFixed(1)} ${pts[0]!.y.toFixed(1)}`;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[Math.max(0, i - 1)]!;
+    const p1 = pts[i]!;
+    const p2 = pts[i + 1]!;
+    const p3 = pts[Math.min(pts.length - 1, i + 2)]!;
+    const c1x = p1.x + (p2.x - p0.x) / 6;
+    const c1y = p1.y + (p2.y - p0.y) / 6;
+    const c2x = p2.x - (p3.x - p1.x) / 6;
+    const c2y = p2.y - (p3.y - p1.y) / 6;
+    d += ` C ${c1x.toFixed(1)} ${c1y.toFixed(1)} ${c2x.toFixed(1)} ${c2y.toFixed(1)} ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`;
+  }
+  return d;
 }
 
 interface DailySeries {
@@ -151,21 +171,29 @@ function buildSeries(days: DayHistory[], count: number): DailySeries {
     };
   });
 
+  // ~daily resolution capped to 366 samples; Catmull-Rom smoothing handles the rest
+  const step = Math.max(1, Math.ceil(F / 366));
+  const indices: number[] = [];
+  for (let j = 0; j < F; j += step) indices.push(j);
+  if (indices.at(-1) !== F - 1) indices.push(F - 1);
+
   const curves: Curve[] = curveLangs.map((lang, li) => {
-    const linePts: string[] = [];
-    const sharePts: string[] = [];
-    for (let j = 0; j < F; j++) {
+    const lineXY: { x: number; y: number }[] = [];
+    const shareXY: { x: number; y: number }[] = [];
+    for (const j of indices) {
       const v = calendar[j]![lang] ?? 0;
-      linePts.push(`${xAt(j).toFixed(1)},${(G1_TOP + G1_H - (v / g1Max) * G1_H).toFixed(1)}`);
-      sharePts.push(
-        `${xAt(j).toFixed(1)},${(G2_TOP + G2_H - (totals[j] > 0 ? (v / totals[j]) * 100 : 0) / 100 * G2_H).toFixed(1)}`
-      );
+      const total = totals[j]!;
+      lineXY.push({ x: xAt(j), y: G1_TOP + G1_H - (v / g1Max) * G1_H });
+      shareXY.push({
+        x: xAt(j),
+        y: G2_TOP + G2_H - ((total > 0 ? (v / total) * 100 : 0) / 100) * G2_H,
+      });
     }
     return {
       lang,
       color: FALLBACK_COLORS[li % FALLBACK_COLORS.length]!,
-      linePts: linePts.join(" "),
-      sharePts: sharePts.join(" "),
+      linePath: smoothPath(lineXY),
+      sharePath: smoothPath(shareXY),
     };
   });
 
@@ -288,9 +316,9 @@ ${logoGlyph(s.name, s.color, x, T1_Y, size)}
       }
       body += `\n<line x1="${BAR_X}" y1="${g.top + g.h}" x2="${BAR_X + BAR_W}" y2="${g.top + g.h}" stroke="${theme.muted}" stroke-opacity="0.3"/>`;
       curves.forEach((c, li) => {
-        const pts = gi === 0 ? c.linePts : c.sharePts;
+        const d = gi === 0 ? c.linePath : c.sharePath;
         const delay = (LINE_START + 0.2 + gi * 0.5 + li * 0.12).toFixed(2);
-        body += `\n<polyline class="line" style="animation-delay:${delay}s" points="${pts}" fill="none" stroke="${c.color}" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" pathLength="1"/>`;
+        body += `\n<path class="line" style="animation-delay:${delay}s" d="${d}" fill="none" stroke="${c.color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" pathLength="1"/>`;
       });
       if (gi === 1) {
         for (const t of yearTicks) {
