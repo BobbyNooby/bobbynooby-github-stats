@@ -110,8 +110,14 @@ In your `username/username` repo:
 </picture>
 ```
 
-Bump a `?v=2` cache-buster on the URL whenever you change the design, or camo
-will keep serving the old SVG for a few hours.
+**About caching:** GitHub routes README images through its `camo` proxy, which
+stores a copy keyed by the exact URL and re-serves it for up to ~6 hours.
+
+- **Daily data updates need nothing** — a 6-hour-old snapshot is indistinguishable
+  from a live one when the data moves once per day
+- **Design changes need a cache buster** — append `?v=2` (then `?v=3`, ...) to
+  every URL in the embed, or camo keeps serving the old design until its TTL
+  expires. New URL = cache miss = fresh fetch
 
 ## Customizing
 
