@@ -139,6 +139,7 @@ interface DailySeries {
   langOrder: string[];
   yearTicks: { x: number; year: string }[];
   g1Ticks: { y: number; label: string }[];
+  g2Ticks: { y: number; label: string }[];
 }
 
 function niceCeil(v: number): number {
@@ -217,6 +218,25 @@ function buildSeries(days: DayHistory[], count: number, colorByLang: Map<string,
     };
   });
 
+  // share graph: the y-max is the highest share any curve ever hits,
+  // rounded up — gives the plot room to breathe instead of a fixed 100%
+  let maxShare = 0;
+  for (let j = 0; j < F; j++) {
+    if (totals[j] <= 0) continue;
+    for (const lang of curveLangs) {
+      const share = ((calendar[j]![lang] ?? 0) / totals[j]!) * 100;
+      if (share > maxShare) maxShare = share;
+    }
+  }
+  const g2Max = maxShare > 0 ? niceCeil(maxShare) : 100;
+  const g2Ticks: { y: number; label: string }[] = [0, 1, 2, 3, 4].map((i) => {
+    const v = (g2Max / 4) * i;
+    return {
+      y: G2_TOP + G2_H - (v / g2Max) * G2_H,
+      label: `${Math.round(v)}%`,
+    };
+  });
+
   // ~daily resolution capped to 366 samples; Catmull-Rom smoothing handles the rest
   const step = Math.max(1, Math.ceil(F / 366));
   const indices: number[] = [];
@@ -232,7 +252,7 @@ function buildSeries(days: DayHistory[], count: number, colorByLang: Map<string,
       lineXY.push({ x: xAt(j), y: G1_TOP + G1_H - (v / g1Max) * G1_H });
       shareXY.push({
         x: xAt(j),
-        y: G2_TOP + G2_H - ((total > 0 ? (v / total) * 100 : 0) / 100) * G2_H,
+        y: G2_TOP + G2_H - ((total > 0 ? (v / total) * 100 : 0) / g2Max) * G2_H,
       });
     }
     return {
@@ -260,7 +280,7 @@ function buildSeries(days: DayHistory[], count: number, colorByLang: Map<string,
     }
   }
 
-  return { curves, langOrder, yearTicks, g1Ticks };
+  return { curves, langOrder, yearTicks, g1Ticks, g2Ticks };
 }
 
 function gridlines(
@@ -381,7 +401,7 @@ ${logoGlyph(s.name, s.color, x, T1_Y, size)}
   // section 4 — two daily line graphs
   const LINE_START = T.graphs.delay;
   if (history && history.days.length > 0) {
-    const { curves, yearTicks, g1Ticks } = buildSeries(history.days, 6, colorByLang);
+    const { curves, yearTicks, g1Ticks, g2Ticks } = buildSeries(history.days, 6, colorByLang);
     const graphs = [
       { label: "LINES OF CODE OVER TIME", top: G1_TOP, h: G1_H },
       { label: "SHARE OF MY CODE OVER TIME (%)", top: G2_TOP, h: G2_H },
