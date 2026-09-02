@@ -100,3 +100,8 @@ will keep serving the old SVG for a few hours.
 - [Lucide](https://lucide.dev) — star/fork/person icons (ISC)
 - [Cascadia Code](https://github.com/microsoft/cascadia-code) (SIL OFL 1.1),
   [Quicksand](https://fonts.google.com/specimen/Quicksand) (SIL OFL 1.1)
+
+## License
+
+Code is [MIT](./LICENSE). Embedded third-party assets (logos, icons, fonts)
+keep their own licenses — see [Credits](#credits).
