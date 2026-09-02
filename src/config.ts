@@ -90,7 +90,7 @@ const PRESETS: Record<
     tiles: { delay: 0.35, dur: 0.45, stagger: 0.05 },
     graphs: { delay: 0.5, dur: 1.1, stagger: 0.06, gap: 0.2 },
     allLanguages: { delay: 0.8, dur: 0.45, stagger: 0.03 },
-    logo: { delay: 0.15, dur: 0.4, stagger: 0 },
+    logo: { delay: 0.2, dur: 0.4, stagger: 0 },
   },
 };
 

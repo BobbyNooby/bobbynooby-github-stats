@@ -295,12 +295,12 @@ export function languagesChart(
   let badge = "";
   if (CONFIG.logo.enabled && CONFIG.logo.variant === "logo") {
     const logoK = CONFIG.logo.size / SITE_LOGO.w;
-    badge = `<g class="fade" style="${anim("fadein", T.logo.dur, T.logo.delay)}"><g class="spin" style="animation-delay:0s"><g transform="translate(${(WIDTH - CONFIG.logo.insetFromRight - CONFIG.logo.size / 2).toFixed(1)} ${CONFIG.logo.y}) scale(${logoK.toFixed(6)})"><g transform="${SITE_LOGO.transform}" fill="${theme.text}">${SITE_LOGO.body}</g></g></g></g>`;
+    badge = `<g class="rise" style="${anim("rise", T.logo.dur, T.logo.delay, "cubic-bezier(.22,1,.36,1)")}"><g class="spin" style="animation-delay:0s"><g transform="translate(${(WIDTH - CONFIG.logo.insetFromRight - CONFIG.logo.size / 2).toFixed(1)} ${CONFIG.logo.y}) scale(${logoK.toFixed(6)})"><g transform="${SITE_LOGO.transform}" fill="${theme.text}">${SITE_LOGO.body}</g></g></g></g>`;
   } else if (CONFIG.logo.enabled && CONFIG.logo.variant === "dot") {
     const r = Math.max(CONFIG.logo.size * 0.2, 4);
     // center the dot on the totals icon row (icons sit at y 30..45)
     const dotCy = 37.5;
-    badge = `<g class="fade" style="${anim("fadein", T.logo.dur, T.logo.delay)}"><circle class="pulse" cx="${WIDTH - CONFIG.logo.insetFromRight - r}" cy="${dotCy}" r="${r}" fill="#3fb950"/></g>`;
+    badge = `<g class="rise" style="${anim("rise", T.logo.dur, T.logo.delay, "cubic-bezier(.22,1,.36,1)")}"><circle class="pulse" cx="${WIDTH - CONFIG.logo.insetFromRight - r}" cy="${dotCy}" r="${r}" fill="#3fb950"/></g>`;
   }
   let body = `${badge}
 <text class="fade title" x="24" y="42" font-size="21" fill="${theme.text}"><tspan class="gt">&gt;</tspan><tspan>&#160;${esc(CONFIG.handle)}</tspan></text>`;
