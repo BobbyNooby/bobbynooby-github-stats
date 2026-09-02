@@ -1,5 +1,6 @@
 import type { DayHistory, Stats } from "../api";
 import { CASCADIA_600, QUICKSAND_300 } from "../font";
+import { LINGUIST_COLORS } from "../linguist-colors";
 import { SITE_LOGO } from "../logo";
 import { THEMES, esc, hasLogo, icon, logoGlyph, type Theme } from "./parts";
 import { CONFIG, resolveAnimation } from "../config";
@@ -145,13 +146,7 @@ function niceCeil(v: number): number {
   return Math.ceil(v / pow) * pow;
 }
 
-// linguist colors for languages that don't appear in the byte-based stats
-const EXTRA_COLORS: Record<string, string> = {
-  Markdown: "#083fa1",
-  SQL: "#e38c00",
-  Makefile: "#427819",
-};
-
+// languages without a stats color fall back to their official linguist color
 function buildSeries(days: DayHistory[], count: number, colorByLang: Map<string, string>): DailySeries {
   // cumulative lines per language on each ACTIVE day
   const cum: Record<string, number> = {};
@@ -225,7 +220,7 @@ function buildSeries(days: DayHistory[], count: number, colorByLang: Map<string,
       lang,
       color:
         colorByLang.get(lang) ??
-        EXTRA_COLORS[lang] ??
+        LINGUIST_COLORS[lang] ??
         FALLBACK_COLORS[li % FALLBACK_COLORS.length]!,
       linePath: smoothPath(lineXY),
       sharePath: smoothPath(shareXY),
@@ -415,7 +410,7 @@ ${logoGlyph(s.name, s.color, x, T1_Y, size)}
       .sort((a, b) => b[1] - a[1])
       .map(([name]) => ({
         name,
-        color: colorByLang.get(name) ?? EXTRA_COLORS[name] ?? FALLBACK_COLORS[0]!,
+        color: colorByLang.get(name) ?? LINGUIST_COLORS[name] ?? FALLBACK_COLORS[0]!,
       }))
       .filter((t) => hasLogo(t.name));
   } else if (stats && stats.languages.length > 0) {

@@ -14,6 +14,13 @@ export type LangHistoryResult =
   | { ok: true; days: DayHistory[]; stale: boolean }
   | { ok: false };
 
+/** anything that can serve the card's data (live client or demo generator) */
+export interface StatsProvider {
+  getStats(): Promise<StatsResult>;
+  getLangHistory(): Promise<LangHistoryResult>;
+  health(): Record<string, unknown>;
+}
+
 export interface Stats {
   taken_at: string;
   languages: LangStat[];
@@ -31,7 +38,7 @@ export type StatsResult =
   | { ok: true; stats: Stats; stale: boolean }
   | { ok: false };
 
-export class StatsClient {
+export class StatsClient implements StatsProvider {
   private cache: Stats | null = null;
   private fetchedAt = 0;
   private histCache: DayHistory[] | null = null;

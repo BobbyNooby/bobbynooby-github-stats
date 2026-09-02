@@ -37,6 +37,34 @@ Responses carry `Cache-Control: public, max-age=21600` so GitHub's image proxy
 (camo) caches them for a few hours — the chart content itself only changes when
 the cron takes its daily snapshot.
 
+## Preview without a backend (demo mode)
+
+No cron instance yet? Generate the whole card from deterministic stub data —
+20 languages, 1,000 days of synthetic history with organic-looking growth
+curves:
+
+```sh
+DEMO=true bun run dev
+```
+
+Great for forking and tweaking the design before wiring up real data.
+
+## Language coverage
+
+Language identification, colors and logos are powered by the full
+[github/linguist](https://github.com/github-linguist/linguist) dataset
+(MIT, © GitHub):
+
+- `src/linguist-colors.ts` — official color for ~690 languages
+- `src/auto-logos.ts` — ~90 auto-matched logo paths from
+  [simple-icons](https://simpleicons.org) (CC0); hand-curated overrides in
+  `src/logos.ts` / `parts.ts` win
+- Languages without a usable logo are omitted from the tile rows; everything
+  else (Config/data files, unknown extensions) is grouped as Config/Other
+
+The companion cron uses the same linguist dataset for git-history language
+detection, so both services agree on language names and colors.
+
 ## Configuration
 
 | Variable | Required | Default | Description |

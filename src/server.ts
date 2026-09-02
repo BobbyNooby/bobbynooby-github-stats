@@ -1,5 +1,5 @@
 import { Elysia } from "elysia";
-import type { StatsClient } from "./api";
+import type { StatsProvider } from "./api";
 import { languagesChart } from "./charts/languages";
 
 const CACHE_CONTROL = "public, max-age=21600";
@@ -13,7 +13,7 @@ function svg(res: string): Response {
   });
 }
 
-export function createServer(client: StatsClient, defaultTheme: "light" | "dark") {
+export function createServer(client: StatsProvider, defaultTheme: "light" | "dark") {
   const themeAndCount = ({ query }: { query: Record<string, string | undefined> }) => {
     const theme = query.theme === "dark" || query.theme === "light" ? query.theme : defaultTheme;
     const countParam = Number(query.count ?? 6);

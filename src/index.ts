@@ -1,4 +1,5 @@
-import { StatsClient } from "./api";
+import { StatsClient, type StatsProvider } from "./api";
+import { DemoProvider } from "./demo";
 import { createServer } from "./server";
 
 function env(name: string): string | undefined {
@@ -10,18 +11,31 @@ function log(...args: unknown[]) {
   console.log("[github-stats-charts]", ...args);
 }
 
+const DEMO = env("DEMO") === "true";
 const STATS_API_URL = env("STATS_API_URL");
 const PORT = Number(env("PORT") ?? 3001);
 const CACHE_TTL_MINUTES = Number(env("CACHE_TTL_MINUTES") ?? 60);
 const DEFAULT_THEME = env("DEFAULT_THEME") === "dark" ? "dark" : "light";
 
-if (!STATS_API_URL) {
-  console.error("[github-stats-charts] STATS_API_URL is required (e.g. https://stats.example.com)");
-  process.exit(1);
+let provider: StatsProvider;
+if (DEMO) {
+  provider = new DemoProvider();
+  log("DEMO MODE — serving generated stub data (no upstream API calls)");
+} else {
+  if (!STATS_API_URL) {
+    console.error(
+      "[github-stats-charts] STATS_API_URL is required (or set DEMO=true to preview with stub data)"
+    );
+    process.exit(1);
+  }
+  provider = new StatsClient(STATS_API_URL, CACHE_TTL_MINUTES);
 }
 
-const client = new StatsClient(STATS_API_URL, CACHE_TTL_MINUTES);
-const app = createServer(client, DEFAULT_THEME);
+const app = createServer(provider, DEFAULT_THEME);
 app.listen(PORT);
 
-log(`serving on http://localhost:${app.server?.port} → ${STATS_API_URL} (cache ${CACHE_TTL_MINUTES}m, theme ${DEFAULT_THEME})`);
+log(
+  DEMO
+    ? `serving on http://localhost:${app.server?.port} (demo data, theme ${DEFAULT_THEME})`
+    : `serving on http://localhost:${app.server?.port} → ${STATS_API_URL} (cache ${CACHE_TTL_MINUTES}m, theme ${DEFAULT_THEME})`
+);

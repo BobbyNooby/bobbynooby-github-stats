@@ -1,4 +1,5 @@
 import { LOGOS } from "../logos";
+import { AUTO_LOGOS, AUTO_LANG_SLUGS } from "../auto-logos";
 
 export interface Theme {
   bg: string;
@@ -72,9 +73,13 @@ const NAME_TO_SLUG: Record<string, string> = {
   scss: "sass",
 };
 
+// hand-curated maps win over generated linguist×simple-icons matches
+const ALL_LOGOS: Record<string, string> = { ...AUTO_LOGOS, ...LOGOS };
+const ALL_SLUGS: Record<string, string> = { ...AUTO_LANG_SLUGS, ...NAME_TO_SLUG };
+
 export function hasLogo(name: string): boolean {
-  const slug = NAME_TO_SLUG[name.toLowerCase()];
-  return slug !== undefined && LOGOS[slug] !== undefined;
+  const slug = ALL_SLUGS[name.toLowerCase()] ?? ALL_SLUGS[name];
+  return slug !== undefined && ALL_LOGOS[slug] !== undefined;
 }
 
 // non-square icons (e.g. Font Awesome java, 384x512); everything else is 24x24
@@ -83,8 +88,8 @@ export const LOGO_VIEWBOX: Record<string, [number, number]> = {
 };
 
 export function logoGlyph(name: string, color: string, x: number, y: number, size: number): string {
-  const slug = NAME_TO_SLUG[name.toLowerCase()];
-  const path = slug ? LOGOS[slug] : undefined;
+  const slug = ALL_SLUGS[name.toLowerCase()] ?? ALL_SLUGS[name];
+  const path = slug ? ALL_LOGOS[slug] : undefined;
   const glyphColor = isLight(color) ? "#1f2328" : "#ffffff";
 
   if (path) {
