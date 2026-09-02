@@ -131,6 +131,25 @@ backfill) and the card renders perfectly without the graphs.
 Other knobs: colors/fonts live in `src/charts/languages.ts` + `parts.ts`,
 your logo mark is the traced path in `src/logo.ts`.
 
+**Animation timing** — also in `src/config.ts`:
+
+```ts
+animation: {
+  preset: "snappy",   // "cascade" (~6s sequential) | "snappy" (~2.5s) | "together" (~1s)
+  speed: 1,           // multiplies every delay/duration (0.5 = 2x faster)
+  overrides: {
+    // full control per section, in seconds:
+    // bar: { delay: 0.2, dur: 0.8 },
+    // graphs: { delay: 1.0, dur: 1.5, stagger: 0.2, gap: 0.6 },
+  },
+}
+```
+
+Sections: `totals`, `bar`, `tiles`, `graphs`, `allLanguages`, `logo`.
+`delay` = when the section starts, `dur` = animation length, `stagger` =
+extra delay per item in the section, `gap` = pause between the two line
+graphs. Overrides win over the preset, and `speed` scales everything.
+
 ## License
 
 Code is [MIT](./LICENSE). Embedded third-party assets (logos, icons, fonts)

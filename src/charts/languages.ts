@@ -2,7 +2,9 @@ import type { DayHistory, Stats } from "../api";
 import { CASCADIA_600, QUICKSAND_300 } from "../font";
 import { SITE_LOGO } from "../logo";
 import { THEMES, esc, hasLogo, icon, logoGlyph, type Theme } from "./parts";
-import { CONFIG } from "../config";
+import { CONFIG, resolveAnimation } from "../config";
+
+const T = resolveAnimation();
 
 // layout: 1 header · 2 bar · 3 selected tiles+pct · 4 two graphs · 5 all-language tiles
 const WIDTH = 830;
@@ -19,6 +21,9 @@ const G2_H = 86;
 const T2_Y = 420; // all-language tiles
 
 const NON_LANGS = new Set(["Config", "Other"]);
+
+const anim = (name: string, dur: number, delay: number, ease = "ease-out"): string =>
+  `animation: ${name} ${dur.toFixed(2)}s ${ease} ${delay.toFixed(2)}s both`;
 
 const FALLBACK_COLORS = [
   "#3178c6",
@@ -91,8 +96,8 @@ function totalsRow(theme: Theme, stats: Stats): string {
   const iconY = 42 - ICON_SIZE + 3;
   let out = "";
   pairs.forEach((p, i) => {
-    const delay = (0.15 + i * 0.12).toFixed(2);
-    out += `\n<g class="rise" style="animation-delay:${delay}s">`;
+    const delay = T.totals.delay + i * T.totals.stagger;
+    out += `\n<g class="rise" style="${anim("rise", T.totals.dur, delay, "cubic-bezier(.22,1,.36,1)")}">`;
     out += `\n${icon(p.icon, ix, iconY, ICON_SIZE, theme.muted)}`;
     out += `\n<text x="${(ix + ICON_SIZE + ICON_TEXT_GAP).toFixed(1)}" y="42" font-size="13" fill="${theme.text}">${p.value}</text>`;
     out += `\n</g>`;
@@ -286,16 +291,16 @@ export function languagesChart(
   // vector site logo, theme-adaptive (fill follows the card theme)
   const logoK = CONFIG.logo.size / SITE_LOGO.w;
   // top-right badge: logo (4th in the header cascade) or green pulsing dot
-  const badgeDelay = (0.15 + 3 * 0.12).toFixed(2);
+  const badgeDelay = T.logo.delay;
   let badge = "";
   if (CONFIG.logo.enabled && CONFIG.logo.variant === "logo") {
     const logoK = CONFIG.logo.size / SITE_LOGO.w;
-    badge = `<g class="fade" style="animation-delay:${badgeDelay}s"><g class="spin" style="animation-delay:0s"><g transform="translate(${(WIDTH - CONFIG.logo.insetFromRight - CONFIG.logo.size / 2).toFixed(1)} ${CONFIG.logo.y}) scale(${logoK.toFixed(6)})"><g transform="${SITE_LOGO.transform}" fill="${theme.text}">${SITE_LOGO.body}</g></g></g></g>`;
+    badge = `<g class="fade" style="${anim("fadein", T.logo.dur, T.logo.delay)}"><g class="spin" style="animation-delay:0s"><g transform="translate(${(WIDTH - CONFIG.logo.insetFromRight - CONFIG.logo.size / 2).toFixed(1)} ${CONFIG.logo.y}) scale(${logoK.toFixed(6)})"><g transform="${SITE_LOGO.transform}" fill="${theme.text}">${SITE_LOGO.body}</g></g></g></g>`;
   } else if (CONFIG.logo.enabled && CONFIG.logo.variant === "dot") {
     const r = Math.max(CONFIG.logo.size * 0.2, 4);
     // center the dot on the totals icon row (icons sit at y 30..45)
     const dotCy = 37.5;
-    badge = `<g class="fade" style="animation-delay:${badgeDelay}s"><circle class="pulse" cx="${WIDTH - CONFIG.logo.insetFromRight - r}" cy="${dotCy}" r="${r}" fill="#3fb950"/></g>`;
+    badge = `<g class="fade" style="${anim("fadein", T.logo.dur, T.logo.delay)}"><circle class="pulse" cx="${WIDTH - CONFIG.logo.insetFromRight - r}" cy="${dotCy}" r="${r}" fill="#3fb950"/></g>`;
   }
   let body = `${badge}
 <text class="fade title" x="24" y="42" font-size="21" fill="${theme.text}"><tspan class="gt">&gt;</tspan><tspan>&#160;${esc(CONFIG.handle)}</tspan></text>`;
@@ -317,7 +322,7 @@ export function languagesChart(
     const clipId = `bar-${opts.theme}`;
     body += `\n<rect class="fade" style="animation-delay:.4s" x="${BAR_X}" y="${BAR_Y}" width="${BAR_W}" height="${BAR_H}" rx="5" fill="${theme.muted}" opacity="0.15"/>`;
     body += `\n<clipPath id="${clipId}"><rect x="${BAR_X}" y="${BAR_Y}" width="${BAR_W}" height="${BAR_H}" rx="5"/></clipPath>`;
-    body += `\n<g clip-path="url(#${clipId})"><g class="fill">`;
+    body += `\n<g clip-path="url(#${clipId})"><g class="fill" style="${anim("fill", T.bar.dur, T.bar.delay, "cubic-bezier(.25,.6,.3,1)")}">`;
     let cum = BAR_X;
     segments.forEach((s) => {
       const w = Math.max((s.pct / 100) * BAR_W, 0.6);
@@ -328,7 +333,6 @@ export function languagesChart(
   }
 
   // section 3 — selected tiles + pct
-  const POP_START = 1.8;
   if (segments.length > 0) {
     const n = segments.length;
     const gap = 8;
@@ -336,31 +340,31 @@ export function languagesChart(
     const rowW = n * size + (n - 1) * gap;
     let x = BAR_X + (BAR_W - rowW) / 2;
     segments.forEach((s, i) => {
-      const delay = (POP_START + i * 0.12).toFixed(2);
+      const delay = T.tiles.delay + i * T.tiles.stagger;
       const pctLabel = s.pct >= 1 ? `${Math.round(s.pct)}%` : "—";
 
       // the catch-all bucket has no logo — a muted glyph tile instead
       if (s.name === "Other") {
-        body += `\n<g class="pop" style="animation-delay:${delay}s">
+        body += `\n<g class="pop" style="${anim("pop", T.tiles.dur, delay, "cubic-bezier(.34,1.56,.64,1)")}">
 <rect x="${x.toFixed(1)}" y="${T1_Y}" width="${size}" height="${size}" rx="6" fill="${s.color}"/>
 <text x="${(x + size / 2).toFixed(1)}" y="${T1_Y + size / 2 + size * 0.14}" font-size="${(size * 0.4).toFixed(1)}" font-weight="700" text-anchor="middle" fill="#ffffff">···</text>
 </g>
-<text class="fade" style="animation-delay:${(Number(delay) + 0.25).toFixed(2)}s" x="${(x + size / 2).toFixed(1)}" y="${T1_Y + size + 13}" font-size="10" text-anchor="middle" fill="${theme.muted}">${pctLabel}</text>`;
+<text class="fade" style="animation: fadein .4s ease-out ${(Number(delay) + 0.25).toFixed(2)}s both" x="${(x + size / 2).toFixed(1)}" y="${T1_Y + size + 13}" font-size="10" text-anchor="middle" fill="${theme.muted}">${pctLabel}</text>`;
         x += size + gap;
         return;
       }
 
-      body += `\n<g class="pop" style="animation-delay:${delay}s">
+      body += `\n<g class="pop" style="${anim("pop", T.tiles.dur, delay, "cubic-bezier(.34,1.56,.64,1)")}">
 <rect x="${x.toFixed(1)}" y="${T1_Y}" width="${size}" height="${size}" rx="6" fill="${s.color}"/>
 ${logoGlyph(s.name, s.color, x, T1_Y, size)}
 </g>
-<text class="fade" style="animation-delay:${(Number(delay) + 0.25).toFixed(2)}s" x="${(x + size / 2).toFixed(1)}" y="${T1_Y + size + 13}" font-size="10" text-anchor="middle" fill="${theme.muted}">${pctLabel}</text>`;
+<text class="fade" style="animation: fadein .4s ease-out ${(Number(delay) + 0.25).toFixed(2)}s both" x="${(x + size / 2).toFixed(1)}" y="${T1_Y + size + 13}" font-size="10" text-anchor="middle" fill="${theme.muted}">${pctLabel}</text>`;
       x += size + gap;
     });
   }
 
   // section 4 — two daily line graphs
-  const LINE_START = 2.3;
+  const LINE_START = T.graphs.delay;
   if (history && history.days.length > 0) {
     const { curves, yearTicks, g1Ticks } = buildSeries(history.days, 6, colorByLang);
     const graphs = [
@@ -370,7 +374,7 @@ ${logoGlyph(s.name, s.color, x, T1_Y, size)}
     graphs.forEach((g, gi) => {
       body += `\n<text class="fade label" style="animation-delay:${LINE_START.toFixed(2)}s" x="24" y="${g.top - 8}" font-size="10" font-weight="600" fill="${theme.muted}">${g.label}</text>`;
       if (gi === 0) {
-        body += gridlines(theme, g.top, g.h, g1Ticks, 1.9);
+        body += gridlines(theme, g.top, g.h, g1Ticks, T.graphs.delay - 0.4);
       } else {
         body += gridlines(
           theme,
@@ -386,8 +390,8 @@ ${logoGlyph(s.name, s.color, x, T1_Y, size)}
       body += `\n<line class="fade" style="animation-delay:${(LINE_START + 0.1).toFixed(2)}s" x1="${BAR_X}" y1="${g.top + g.h}" x2="${BAR_X + BAR_W}" y2="${g.top + g.h}" stroke="${theme.muted}" stroke-opacity="0.3"/>`;
       curves.forEach((c, li) => {
         const d = gi === 0 ? c.linePath : c.sharePath;
-        const delay = (LINE_START + 0.2 + gi * 0.5 + li * 0.12).toFixed(2);
-        body += `\n<path class="line" style="animation-delay:${delay}s" d="${d}" fill="none" stroke="${c.color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" pathLength="1"/>`;
+        const delay = LINE_START + 0.2 + gi * (T.graphs.gap ?? 0.5) + li * T.graphs.stagger;
+        body += `\n<path class="line" style="${anim("draw", T.graphs.dur, delay)}" d="${d}" fill="none" stroke="${c.color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" pathLength="1"/>`;
       });
       if (gi === 1) {
         for (const t of yearTicks) {
@@ -423,10 +427,10 @@ ${logoGlyph(s.name, s.color, x, T1_Y, size)}
     const size = Math.min(36, Math.floor((BAR_W - (n - 1) * gap) / n));
     const rowW = n * size + (n - 1) * gap;
     let x = BAR_X + (BAR_W - rowW) / 2;
-    const TILE_START = LINE_START + 2.0;
+    const TILE_START = T.allLanguages.delay;
     tiles.forEach((t, i) => {
-      const delay = (TILE_START + i * 0.05).toFixed(2);
-      body += `\n<g class="pop" style="animation-delay:${delay}s">
+      const delay = TILE_START + i * T.allLanguages.stagger;
+      body += `\n<g class="pop" style="${anim("pop", T.tiles.dur, delay, "cubic-bezier(.34,1.56,.64,1)")}">
 <rect x="${x.toFixed(1)}" y="${T2_Y}" width="${size}" height="${size}" rx="6" fill="${t.color}"/>
 ${logoGlyph(t.name, t.color, x, T2_Y, size)}
 </g>`;
