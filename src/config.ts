@@ -17,6 +17,7 @@ export const CONFIG = {
    *  swap `body` there with your own mark, or set enabled: false */
   logo: {
     enabled: true,
+    variant: "logo" as "logo" | "dot",
     insetFromRight: 40, // px from the right border; bigger = further left
     y: 23,              // px from the top border (logo's top edge)
     size: 27,           // rendered width/height in px

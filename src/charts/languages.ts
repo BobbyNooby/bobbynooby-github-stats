@@ -38,6 +38,7 @@ const STYLE = `<style>
   .rise { opacity: 0; animation: rise .5s cubic-bezier(.22,1,.36,1) both; }
   .line { stroke-dasharray: 1; stroke-dashoffset: 1; opacity: 0; animation: draw 1.1s ease-out both; }
   .spin { transform-box: fill-box; transform-origin: center; animation: rotate 3s steps(72) infinite; }
+  .pulse { animation: pulse 2.4s ease-in-out 2s infinite; }
   @keyframes fill { to { transform: scaleX(1); } }
   @keyframes pop { from { opacity: 0; transform: scale(0); } to { opacity: 1; transform: scale(1); } }
   @keyframes fadein { from { opacity: 0; } }
@@ -47,11 +48,12 @@ const STYLE = `<style>
     from { transform: rotate3d(0, 1, 0, 0deg); }
     to { transform: rotate3d(0, 1, 0, 360deg); }
   }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
   @media (prefers-reduced-motion: reduce) {
     .fill { transform: scaleX(1); animation: none; }
     .pop, .fade, .rise { animation-duration: .01s; animation-delay: 0s !important; }
     .line { animation-duration: .01s; }
-    .spin { animation: none; }
+    .spin, .pulse { animation: none; }
   }
 </style>`;
 
@@ -273,11 +275,17 @@ export function languagesChart(
   );
   // vector site logo, theme-adaptive (fill follows the card theme)
   const logoK = CONFIG.logo.size / SITE_LOGO.w;
-  // logo fades in 4th — right after star, fork, followers
-  const logoMarkup = CONFIG.logo.enabled
-    ? `<g class="fade" style="animation-delay:${(0.15 + 3 * 0.12).toFixed(2)}s"><g class="spin" style="animation-delay:0s"><g transform="translate(${(WIDTH - CONFIG.logo.insetFromRight - CONFIG.logo.size / 2).toFixed(1)} ${CONFIG.logo.y}) scale(${logoK.toFixed(6)})"><g transform="${SITE_LOGO.transform}" fill="${theme.text}">${SITE_LOGO.body}</g></g></g></g>`
-    : "";
-  let body = `${logoMarkup}
+  // top-right badge: logo (4th in the header cascade) or green pulsing dot
+  const badgeDelay = (0.15 + 3 * 0.12).toFixed(2);
+  let badge = "";
+  if (CONFIG.logo.enabled && CONFIG.logo.variant === "logo") {
+    const logoK = CONFIG.logo.size / SITE_LOGO.w;
+    badge = `<g class="fade" style="animation-delay:${badgeDelay}s"><g class="spin" style="animation-delay:0s"><g transform="translate(${(WIDTH - CONFIG.logo.insetFromRight - CONFIG.logo.size / 2).toFixed(1)} ${CONFIG.logo.y}) scale(${logoK.toFixed(6)})"><g transform="${SITE_LOGO.transform}" fill="${theme.text}">${SITE_LOGO.body}</g></g></g></g>`;
+  } else if (CONFIG.logo.enabled && CONFIG.logo.variant === "dot") {
+    const r = Math.max(CONFIG.logo.size * 0.2, 4);
+    badge = `<g class="fade" style="animation-delay:${badgeDelay}s"><circle class="pulse" cx="${WIDTH - CONFIG.logo.insetFromRight - r}" cy="${CONFIG.logo.y + r}" r="${r}" fill="#3fb950"/></g>`;
+  }
+  let body = `${badge}
 <text class="fade title" x="24" y="42" font-size="21" fill="${theme.text}"><tspan class="gt">&gt;</tspan><tspan>&#160;${esc(CONFIG.handle)}</tspan></text>`;
   if (stats && stats.languages.length > 0) body += totalsRow(theme, stats);
 
