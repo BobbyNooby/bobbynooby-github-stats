@@ -140,7 +140,14 @@ function niceCeil(v: number): number {
   return Math.ceil(v / pow) * pow;
 }
 
-function buildSeries(days: DayHistory[], count: number): DailySeries {
+// linguist colors for languages that don't appear in the byte-based stats
+const EXTRA_COLORS: Record<string, string> = {
+  Markdown: "#083fa1",
+  SQL: "#e38c00",
+  Makefile: "#427819",
+};
+
+function buildSeries(days: DayHistory[], count: number, colorByLang: Map<string, string>): DailySeries {
   // cumulative lines per language on each ACTIVE day
   const cum: Record<string, number> = {};
   const frames: Record<string, number>[] = [];
@@ -211,7 +218,10 @@ function buildSeries(days: DayHistory[], count: number): DailySeries {
     }
     return {
       lang,
-      color: FALLBACK_COLORS[li % FALLBACK_COLORS.length]!,
+      color:
+        colorByLang.get(lang) ??
+        EXTRA_COLORS[lang] ??
+        FALLBACK_COLORS[li % FALLBACK_COLORS.length]!,
       linePath: smoothPath(lineXY),
       sharePath: smoothPath(shareXY),
     };
@@ -352,7 +362,7 @@ ${logoGlyph(s.name, s.color, x, T1_Y, size)}
   // section 4 — two daily line graphs
   const LINE_START = 2.3;
   if (history && history.days.length > 0) {
-    const { curves, yearTicks, g1Ticks } = buildSeries(history.days, 6);
+    const { curves, yearTicks, g1Ticks } = buildSeries(history.days, 6, colorByLang);
     const graphs = [
       { label: "LINES OF CODE OVER TIME", top: G1_TOP, h: G1_H },
       { label: "SHARE OF MY CODE OVER TIME (%)", top: G2_TOP, h: G2_H },
@@ -401,7 +411,7 @@ ${logoGlyph(s.name, s.color, x, T1_Y, size)}
       .sort((a, b) => b[1] - a[1])
       .map(([name]) => ({
         name,
-        color: colorByLang.get(name) ?? FALLBACK_COLORS[0]!,
+        color: colorByLang.get(name) ?? EXTRA_COLORS[name] ?? FALLBACK_COLORS[0]!,
       }))
       .filter((t) => hasLogo(t.name));
   } else if (stats && stats.languages.length > 0) {
