@@ -141,10 +141,14 @@ only file you need to touch for branding:
 ```ts
 export const CONFIG = {
   handle: "yourname",     // shows as ">yourname" in the title
-  logo: { enabled: true, insetFromRight: 40, y: 23, size: 27 },
+  logo: {
+    enabled: true,
+    variant: "logo",      // "logo" (your mark) | "dot" (green pulsing dot)
+    insetFromRight: 40, y: 23, size: 27,
+  },
   showBar: true,
   showGraphs: true,
-  showAllLanguages: true,
+  showAllLanguages: true, // bottom row wraps into multiple rows if needed
 };
 ```
 
