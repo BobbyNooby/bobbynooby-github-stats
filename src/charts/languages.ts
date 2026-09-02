@@ -1,7 +1,8 @@
 import type { DayHistory, Stats } from "../api";
 import { CASCADIA_600, QUICKSAND_300 } from "../font";
 import { SITE_LOGO } from "../logo";
-import { THEMES, hasLogo, icon, logoGlyph, type Theme } from "./parts";
+import { THEMES, esc, hasLogo, icon, logoGlyph, type Theme } from "./parts";
+import { CONFIG } from "../config";
 
 // layout: 1 header · 2 bar · 3 selected tiles+pct · 4 two graphs · 5 all-language tiles
 const WIDTH = 830;
@@ -19,13 +20,6 @@ const T2_Y = 420; // all-language tiles
 
 const NON_LANGS = new Set(["Config", "Other"]);
 
-// ---- logo knobs (tune me) ----
-export const LOGO_KNOBS = {
-  insetFromRight: 40, // px from the right border; bigger = further left
-  y: 23, // px from the top border (logo's top edge); smaller = higher
-  size: 27, // rendered logo width/height in px
-};
-// -------------------------------
 const FALLBACK_COLORS = [
   "#3178c6",
   "#f1e05a",
@@ -278,15 +272,18 @@ export function languagesChart(
     (stats?.languages ?? []).map((l) => [l.name, l.color]),
   );
   // vector site logo, theme-adaptive (fill follows the card theme)
-  const logoK = LOGO_KNOBS.size / SITE_LOGO.w;
+  const logoK = CONFIG.logo.size / SITE_LOGO.w;
   // logo fades in 4th — right after star, fork, followers
-  let body = `<g class="fade" style="animation-delay:${(0.15 + 3 * 0.12).toFixed(2)}s"><g class="spin" style="animation-delay:0s"><g transform="translate(${(WIDTH - LOGO_KNOBS.insetFromRight - LOGO_KNOBS.size / 2).toFixed(1)} ${LOGO_KNOBS.y}) scale(${logoK.toFixed(6)})"><g transform="${SITE_LOGO.transform}" fill="${theme.text}">${SITE_LOGO.body}</g></g></g></g>
-<text class="fade title" x="24" y="42" font-size="21" fill="${theme.text}"><tspan class="gt">&gt;</tspan><tspan>&#160;bobbynooby</tspan></text>`;
+  const logoMarkup = CONFIG.logo.enabled
+    ? `<g class="fade" style="animation-delay:${(0.15 + 3 * 0.12).toFixed(2)}s"><g class="spin" style="animation-delay:0s"><g transform="translate(${(WIDTH - CONFIG.logo.insetFromRight - CONFIG.logo.size / 2).toFixed(1)} ${CONFIG.logo.y}) scale(${logoK.toFixed(6)})"><g transform="${SITE_LOGO.transform}" fill="${theme.text}">${SITE_LOGO.body}</g></g></g></g>`
+    : "";
+  let body = `${logoMarkup}
+<text class="fade title" x="24" y="42" font-size="21" fill="${theme.text}"><tspan class="gt">&gt;</tspan><tspan>&#160;${esc(CONFIG.handle)}</tspan></text>`;
   if (stats && stats.languages.length > 0) body += totalsRow(theme, stats);
 
   // section 2 — bar
   let segments: { name: string; color: string; pct: number }[] = [];
-  if (stats && stats.languages.length > 0) {
+  if (CONFIG.showBar && stats && stats.languages.length > 0) {
     const top = stats.languages.slice(0, opts.count);
     const rest = stats.languages.slice(opts.count);
     segments = top.map((l) => ({ name: l.name, color: l.color, pct: l.pct }));
@@ -382,7 +379,7 @@ ${logoGlyph(s.name, s.color, x, T1_Y, size)}
 
   // section 5 — every language
   let tiles: { name: string; color: string }[] = [];
-  if (history && history.days.length > 0) {
+  if (CONFIG.showAllLanguages && history && history.days.length > 0) {
     const cum: Record<string, number> = {};
     for (const d of history.days) {
       for (const l of d.languages) {

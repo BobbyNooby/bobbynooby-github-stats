@@ -101,6 +101,34 @@ will keep serving the old SVG for a few hours.
 - [Cascadia Code](https://github.com/microsoft/cascadia-code) (SIL OFL 1.1),
   [Quicksand](https://fonts.google.com/specimen/Quicksand) (SIL OFL 1.1)
 
+## Make it yours (forking)
+
+Fork both repos, deploy both on Coolify, and tune `src/config.ts` — it's the
+only file you need to touch for branding:
+
+```ts
+export const CONFIG = {
+  handle: "yourname",     // shows as ">yourname" in the title
+  logo: { enabled: true, insetFromRight: 40, y: 23, size: 27 },
+  showBar: true,
+  showGraphs: true,
+  showAllLanguages: true,
+};
+```
+
+**What needs what:**
+
+| Feature | Data source |
+|---|---|
+| Header, language bar, tiles, totals | Any GitHub API source (`/api/stats`) — works with plain GitHub data |
+| The two line graphs | **Git history** — this repo's companion cron (`github-stats-cron`) is the only thing that computes it, via its `/api/lang-history` |
+
+No git history? Set `showGraphs: false` (or just don't run the cron's
+backfill) and the card renders perfectly without the graphs.
+
+Other knobs: colors/fonts live in `src/charts/languages.ts` + `parts.ts`,
+your logo mark is the traced path in `src/logo.ts`.
+
 ## License
 
 Code is [MIT](./LICENSE). Embedded third-party assets (logos, icons, fonts)
