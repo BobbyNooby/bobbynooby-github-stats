@@ -85,6 +85,8 @@ will keep serving the old SVG for a few hours.
 
 ## Customizing
 
+- **Branding & toggles: `src/config.ts`** — your handle, logo position/size,
+  section switches. Start here.
 - Layout, bar, graphs, choreography: `src/charts/languages.ts`
 - Shared pieces (themes, icons, logo tiles): `src/charts/parts.ts`
 - Language logos: `src/logos.ts` — paths from
