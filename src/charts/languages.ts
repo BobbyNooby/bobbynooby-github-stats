@@ -74,7 +74,7 @@ text { font-family: 'Segoe UI', Ubuntu, 'Helvetica Neue', sans-serif; }
 .label { letter-spacing: 1px; }
 </style>
 ${STYLE}
-<rect x="1" y="1" width="${WIDTH - 2}" height="${HEIGHT - 2}" rx="6" fill="${theme.bg}" stroke="${theme.border}"/>
+<rect x="1" y="1" width="${WIDTH - 2}" height="${height - 2}" rx="6" fill="${theme.bg}" stroke="${theme.border}"/>
 ${body}
 </svg>`;
 }
@@ -147,6 +147,25 @@ function niceCeil(v: number): number {
 }
 
 // languages without a stats color fall back to their official linguist color
+function hueOf(hex: string): number {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
+  if (!m) return 999; // grays and unknowns sink to the end of the rainbow
+  const n = parseInt(m[1], 16);
+  const r = ((n >> 16) & 255) / 255;
+  const g = ((n >> 8) & 255) / 255;
+  const b = (n & 255) / 255;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  if (max === min) return 999;
+  const d = max - min;
+  let h: number;
+  if (max === r) h = ((g - b) / d) % 6;
+  else if (max === g) h = (b - r) / d + 2;
+  else h = (r - g) / d + 4;
+  h *= 60;
+  return h < 0 ? h + 360 : h;
+}
+
 function buildSeries(days: DayHistory[], count: number, colorByLang: Map<string, string>): DailySeries {
   // cumulative lines per language on each ACTIVE day
   const cum: Record<string, number> = {};
@@ -413,7 +432,8 @@ ${logoGlyph(s.name, s.color, x, T1_Y, size)}
         name,
         color: colorByLang.get(name) ?? LINGUIST_COLORS[name] ?? FALLBACK_COLORS[0]!,
       }))
-      .filter((t) => hasLogo(t.name));
+      .filter((t) => hasLogo(t.name))
+      .sort((a, b) => hueOf(a.color) - hueOf(b.color)); // 🌈 rainbow order
   } else if (stats && stats.languages.length > 0) {
     tiles = stats.languages.map((l) => ({ name: l.name, color: l.color }));
   }
