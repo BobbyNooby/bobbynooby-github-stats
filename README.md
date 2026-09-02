@@ -24,7 +24,9 @@ draw themselves) and collapses to instant rendering under
 
 | Route | Description |
 |---|---|
-| `GET /languages.svg` | The full profile card |
+| `GET /languages.svg` | The full profile card (live data) |
+| `GET /demo.svg` | The card rendered from deterministic stub data |
+| `GET /demo` | The demo card on a dark/light preview page |
 | `GET /health` | Service + upstream API status |
 
 Query params on `/languages.svg`:
