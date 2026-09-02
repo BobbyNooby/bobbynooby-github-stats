@@ -430,7 +430,7 @@ ${logoGlyph(s.name, s.color, x, T1_Y, size)}
     const TILE_START = T.allLanguages.delay;
     tiles.forEach((t, i) => {
       const delay = TILE_START + i * T.allLanguages.stagger;
-      body += `\n<g class="pop" style="${anim("pop", T.tiles.dur, delay, "cubic-bezier(.34,1.56,.64,1)")}">
+      body += `\n<g class="pop" style="${anim("pop", T.allLanguages.dur, delay, "cubic-bezier(.34,1.56,.64,1)")}">
 <rect x="${x.toFixed(1)}" y="${T2_Y}" width="${size}" height="${size}" rx="6" fill="${t.color}"/>
 ${logoGlyph(t.name, t.color, x, T2_Y, size)}
 </g>`;

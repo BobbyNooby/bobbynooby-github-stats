@@ -19,13 +19,13 @@ export const CONFIG = {
     enabled: true,
     variant: "logo" as "logo" | "dot",
     insetFromRight: 40, // px from the right border; bigger = further left
-    y: 23,              // px from the top border (logo's top edge)
-    size: 27,           // rendered width/height in px
+    y: 23, // px from the top border (logo's top edge)
+    size: 27, // rendered width/height in px
   },
 
   /** section toggles */
   showBar: true,
-  showGraphs: true,       // needs git history from github-stats-cron
+  showGraphs: true, // needs git history from github-stats-cron
   showAllLanguages: true,
 
   /**
@@ -40,7 +40,7 @@ export const CONFIG = {
    *              bar, tiles, graphs, allLanguages, logo.
    */
   animation: {
-    preset: "snappy" as "cascade" | "snappy" | "together",
+    preset: "together" as "cascade" | "snappy" | "together",
     speed: 1,
     overrides: {} as Partial<
       Record<
@@ -56,12 +56,7 @@ export const CONFIG = {
  * CONFIG.animation: preset -> speed multiplier -> overrides.
  */
 export type SectionName =
-  | "totals"
-  | "bar"
-  | "tiles"
-  | "graphs"
-  | "allLanguages"
-  | "logo";
+  "totals" | "bar" | "tiles" | "graphs" | "allLanguages" | "logo";
 export interface SectionTiming {
   delay: number;
   dur: number;
@@ -69,7 +64,10 @@ export interface SectionTiming {
   gap?: number; // graphs only: pause between the two plots
 }
 
-const PRESETS: Record<"cascade" | "snappy" | "together", Record<SectionName, SectionTiming>> = {
+const PRESETS: Record<
+  "cascade" | "snappy" | "together",
+  Record<SectionName, SectionTiming>
+> = {
   cascade: {
     totals: { delay: 0.15, dur: 0.5, stagger: 0.12 },
     bar: { delay: 0.5, dur: 1.2, stagger: 0 },
@@ -106,7 +104,7 @@ export function resolveAnimation(): Record<SectionName, SectionTiming> {
   });
   const preset = PRESETS[a.preset] ?? PRESETS.cascade;
   const base = Object.fromEntries(
-    Object.entries(preset).map(([k, v]) => [k, scale(v as SectionTiming)])
+    Object.entries(preset).map(([k, v]) => [k, scale(v as SectionTiming)]),
   ) as Record<SectionName, SectionTiming>;
   for (const [section, o] of Object.entries(a.overrides)) {
     const target = base[section as SectionName];
