@@ -63,8 +63,8 @@ const STYLE = `<style>
   }
 </style>`;
 
-function card(theme: Theme, body: string): string {
-  return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}">
+function card(theme: Theme, body: string, height: number = HEIGHT): string {
+  return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${WIDTH}" height="${height}" viewBox="0 0 ${WIDTH} ${height}">
 <style>
 @font-face { font-family: 'Cascadia Code'; src: url(${CASCADIA_600}) format('woff2'); }
 @font-face { font-family: 'Quicksand'; src: url(${QUICKSAND_300}) format('woff2'); }
@@ -283,6 +283,7 @@ export function languagesChart(
   const colorByLang = new Map(
     (stats?.languages ?? []).map((l) => [l.name, l.color]),
   );
+  let bodyHeight = HEIGHT;
   // vector site logo, theme-adaptive (fill follows the card theme)
   const logoK = CONFIG.logo.size / SITE_LOGO.w;
   // top-right badge: logo (4th in the header cascade) or green pulsing dot
@@ -416,22 +417,32 @@ ${logoGlyph(s.name, s.color, x, T1_Y, size)}
   } else if (stats && stats.languages.length > 0) {
     tiles = stats.languages.map((l) => ({ name: l.name, color: l.color }));
   }
+
   if (tiles.length > 0) {
-    const n = tiles.length;
-    const gap = 6;
-    const size = Math.min(36, Math.floor((BAR_W - (n - 1) * gap) / n));
-    const rowW = n * size + (n - 1) * gap;
-    let x = BAR_X + (BAR_W - rowW) / 2;
+    const gap = 8;
+    const size = 34;
+    const perRow = Math.max(1, Math.floor((BAR_W + gap) / (size + gap)));
+    const rows = Math.ceil(tiles.length / perRow);
     const TILE_START = T.allLanguages.delay;
-    tiles.forEach((t, i) => {
-      const delay = TILE_START + i * T.allLanguages.stagger;
-      body += `\n<g class="pop" style="${anim("pop", T.allLanguages.dur, delay, "cubic-bezier(.34,1.56,.64,1)")}">
-<rect x="${x.toFixed(1)}" y="${T2_Y}" width="${size}" height="${size}" rx="6" fill="${t.color}"/>
-${logoGlyph(t.name, t.color, x, T2_Y, size)}
+
+    for (let r = 0; r < rows; r++) {
+      const count = Math.min(perRow, tiles.length - r * perRow);
+      const rowW = count * size + (count - 1) * gap;
+      const rowX = BAR_X + (BAR_W - rowW) / 2;
+      for (let c = 0; c < count; c++) {
+        const i = r * perRow + c;
+        const t = tiles[i]!;
+        const delay = TILE_START + i * T.allLanguages.stagger;
+        const x = rowX + c * (size + gap);
+        const y = T2_Y + r * (size + 10);
+        body += `\n<g class="pop" style="${anim("pop", T.allLanguages.dur, delay, "cubic-bezier(.34,1.56,.64,1)")}">
+<rect x="${x.toFixed(1)}" y="${y}" width="${size}" height="${size}" rx="6" fill="${t.color}"/>
+${logoGlyph(t.name, t.color, x, y, size)}
 </g>`;
-      x += size + gap;
-    });
+      }
+    }
+    bodyHeight = T2_Y + rows * (size + 10) + 14;
   }
 
-  return card(theme, body);
+  return card(theme, body, bodyHeight);
 }
