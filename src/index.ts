@@ -33,7 +33,7 @@ const runIngest = async (): Promise<void> => {
     log("ingest failed, keeping last snapshot:", err instanceof Error ? err.message : err);
   }
   // the git-history table rides along with every snapshot cycle
-  await syncCommitHistory(config.username, config.dbPath, config.githubApiBase);
+  await syncCommitHistory(config.username, config.dbPath, config.githubApiBase, config.token);
 };
 
 let provider: StatsProvider;

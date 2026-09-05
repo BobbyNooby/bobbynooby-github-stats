@@ -14,11 +14,12 @@ function log(...args: unknown[]) {
 export async function syncCommitHistory(
   username: string,
   dbPath: string,
-  apiBase = "https://api.github.com"
+  apiBase = "https://api.github.com",
+  token?: string
 ): Promise<void> {
   const cloneDir = join(dirname(dbPath), `${basename(dbPath, ".db")}-clones`);
   try {
-    const result = await backfillGitHistory(username, cloneDir, apiBase);
+    const result = await backfillGitHistory(username, cloneDir, apiBase, token);
     // full recompute each run: wipe stale rows (e.g. languages that the
     // extension map has since learned about, previously counted as Other)
     clearCommitHistory();

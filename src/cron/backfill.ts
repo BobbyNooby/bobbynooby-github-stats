@@ -94,13 +94,16 @@ export interface BackfillResult {
 export async function backfillGitHistory(
   username: string,
   cloneDir: string,
-  apiBase = "https://api.github.com"
+  apiBase = "https://api.github.com",
+  token?: string
 ): Promise<BackfillResult> {
   await $`mkdir -p ${cloneDir}`;
 
-  // /users/:user/repos only ever returns public repos, so this list is
-  // private-safe regardless of tokens
-  const res = await fetch(`${apiBase}/users/${username}/repos?per_page=100`);
+  // /users/:user/repos only ever returns PUBLIC repos, even authenticated —
+  // so passing the token raises the rate limit without ever seeing private data
+  const res = await fetch(`${apiBase}/users/${username}/repos?per_page=100`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
   if (!res.ok) throw new Error(`repo list HTTP ${res.status}`);
   const repos = (await res.json()) as {
     full_name: string;
