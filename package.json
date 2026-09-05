@@ -1,14 +1,19 @@
 {
-  "name": "github-stats-charts",
-  "version": "0.1.0",
-  "description": "Animated GitHub profile card SVG — language bar, daily line graphs, logo tiles. Served live by Elysia, powered by github-stats-cron.",
+  "name": "bobbynooby-github-stats",
+  "version": "0.2.0",
+  "description": "One service, your whole GitHub-stats card: daily snapshots into SQLite, JSON API, and an animated SVG profile card. Only GITHUB_USERNAME required.",
   "type": "module",
   "scripts": {
     "dev": "bun --watch run src/index.ts",
     "start": "bun run src/index.ts",
+    "ingest": "bun run src/index.ts --ingest-only",
+    "mock": "bun run scripts/mock-github.ts",
+    "test": "bun test",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@elysiajs/cors": "^1.3.0",
+    "@elysiajs/swagger": "^1.3.1",
     "elysia": "^1.3.0"
   },
   "devDependencies": {

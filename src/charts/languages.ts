@@ -2,7 +2,8 @@ import type { DayHistory, Stats } from "../api";
 import { CASCADIA_600, QUICKSAND_300 } from "../font";
 import { LINGUIST_COLORS } from "../linguist-colors";
 import { SITE_LOGO } from "../logo";
-import { THEMES, esc, hasLogo, icon, logoGlyph, type Theme } from "./parts";
+import { loadLogo } from "../load-logo";
+import { THEME_VARS, esc, hasLogo, icon, logoGlyph, themeCss, type Theme } from "./parts";
 import { CONFIG, resolveAnimation } from "../config";
 
 const T = resolveAnimation();
@@ -63,7 +64,7 @@ const STYLE = `<style>
   }
 </style>`;
 
-function card(theme: Theme, body: string, height: number = HEIGHT): string {
+function card(theme: Theme, body: string, height: number = HEIGHT, css: string = ""): string {
   return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${WIDTH}" height="${height}" viewBox="0 0 ${WIDTH} ${height}">
 <style>
 @font-face { font-family: 'Cascadia Code'; src: url(${CASCADIA_600}) format('woff2'); }
@@ -73,6 +74,7 @@ text { font-family: 'Segoe UI', Ubuntu, 'Helvetica Neue', sans-serif; }
 .title .gt { font-family: 'Cascadia Code', 'Cascadia Mono', ui-monospace, Menlo, Consolas, monospace; }
 .label { letter-spacing: 1px; }
 </style>
+${css ? `<style>${css}</style>` : ""}
 ${STYLE}
 <rect x="1" y="1" width="${WIDTH - 2}" height="${height - 2}" rx="6" fill="${theme.bg}" stroke="${theme.border}"/>
 ${body}
@@ -304,9 +306,11 @@ function gridlines(
 export function languagesChart(
   stats: Stats | null,
   history: { days: DayHistory[] } | null,
-  opts: { theme: "light" | "dark"; count: number },
+  opts: { theme: "auto" | "light" | "dark"; count: number },
 ): string {
-  const theme = THEMES[opts.theme];
+  // every paint is a CSS var so ?theme=auto can flip palettes via media query
+  const theme = THEME_VARS;
+  const css = themeCss(opts.theme);
   if (
     (!stats || stats.languages.length === 0) &&
     (!history || history.days.length === 0)
@@ -316,6 +320,8 @@ export function languagesChart(
       `<text class="fade" x="24" y="52" font-size="20" font-weight="600" fill="${theme.text}">GitHub Stats</text>
 <text class="fade" style="animation-delay:.15s" x="24" y="92" font-size="14" fill="${theme.muted}">No data yet — collecting stats.</text>
 <text class="fade" style="animation-delay:.3s" x="24" y="114" font-size="13" fill="${theme.muted}">Check back after the first snapshot.</text>`,
+      HEIGHT,
+      css,
     );
   }
 
@@ -329,8 +335,18 @@ export function languagesChart(
   const badgeDelay = T.logo.delay;
   let badge = "";
   if (CONFIG.logo.enabled && CONFIG.logo.variant === "logo") {
-    const logoK = CONFIG.logo.size / SITE_LOGO.w;
-    badge = `<g class="rise" style="${anim("rise", T.logo.dur, T.logo.delay, "cubic-bezier(.22,1,.36,1)")}"><g class="spin" style="animation-delay:0s"><g transform="translate(${(WIDTH - CONFIG.logo.insetFromRight - CONFIG.logo.size / 2).toFixed(1)} ${CONFIG.logo.y}) scale(${logoK.toFixed(6)})"><g transform="${SITE_LOGO.transform}" fill="${theme.text}">${SITE_LOGO.body}</g></g></g></g>`;
+    const dropped = loadLogo(); // assets/logo.svg if the forker dropped one in
+    if (dropped) {
+      const [vw, vh] = dropped.viewBox;
+      const k = CONFIG.logo.size / Math.max(vw, vh);
+      const x =
+        WIDTH - CONFIG.logo.insetFromRight - CONFIG.logo.size + (CONFIG.logo.size - vw * k) / 2;
+      const y = CONFIG.logo.y + (CONFIG.logo.size - vh * k) / 2;
+      badge = `<g class="rise" style="${anim("rise", T.logo.dur, T.logo.delay, "cubic-bezier(.22,1,.36,1)")}"><g class="spin" style="animation-delay:0s"><g transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) scale(${k.toFixed(6)})">${dropped.body}</g></g></g>`;
+    } else {
+      const logoK = CONFIG.logo.size / SITE_LOGO.w;
+      badge = `<g class="rise" style="${anim("rise", T.logo.dur, T.logo.delay, "cubic-bezier(.22,1,.36,1)")}"><g class="spin" style="animation-delay:0s"><g transform="translate(${(WIDTH - CONFIG.logo.insetFromRight - CONFIG.logo.size / 2).toFixed(1)} ${CONFIG.logo.y}) scale(${logoK.toFixed(6)})"><g transform="${SITE_LOGO.transform}" fill="${theme.text}">${SITE_LOGO.body}</g></g></g></g>`;
+    }
   } else if (CONFIG.logo.enabled && CONFIG.logo.variant === "dot") {
     const r = Math.max(CONFIG.logo.size * 0.2, 4);
     // center the dot on the totals icon row (icons sit at y 30..45)
@@ -484,5 +500,5 @@ ${logoGlyph(t.name, t.color, x, y, size)}
     bodyHeight = T2_Y + rows * (size + 10) + 14;
   }
 
-  return card(theme, body, bodyHeight);
+  return card(theme, body, bodyHeight, css);
 }

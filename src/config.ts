@@ -1,72 +1,53 @@
 /**
- * ────────────────────────── Make it yours ──────────────────────────
- * Fork-tuning lives HERE. Everything else in src/ is engine.
- *
- * Data sources (what needs what):
- *   • The header, language bar, tiles and totals only need GitHub API
- *     data — your cron instance's /api/stats. Works out of the box.
- *   • The two line graphs additionally need GIT history, which only
- *     github-stats-cron provides (via /api/lang-history, populated by
- *     its backfill). Without it the card renders without the graphs.
+ * Adapter between env config and the renderer. Everything here is set in
+ * .env (see src/env.ts + .env.example) — this file only translates names.
  */
-export const CONFIG = {
-  /** shown after the ">" in the title — e.g. ">yourname" */
-  handle: "bobbynooby",
+import { loadConfig, type SectionName, type SectionTiming } from "./env";
 
-  /** spinning logo, top right (traced vector path in src/logo.ts).
-   *  swap `body` there with your own mark, or set enabled: false */
+const app = loadConfig();
+
+export const CONFIG = {
+  /** shown after the ">" in the title — ">yourname" */
+  handle: app.handle,
+
+  /** spinning logo, top right (drop your own at assets/logo.svg) */
   logo: {
-    enabled: true,
-    variant: "logo" as "logo" | "dot",
-    insetFromRight: 40, // px from the right border; bigger = further left
-    y: 23, // px from the top border (logo's top edge)
-    size: 27, // rendered width/height in px
+    enabled: app.logo !== "none",
+    variant: (app.logo === "dot" ? "dot" : "logo") as "logo" | "dot",
+    insetFromRight: app.logoInset, // px from the right border; bigger = further left
+    y: app.logoY, // px from the top border
+    size: app.logoSize, // rendered width/height in px
   },
 
   /** section toggles */
-  showBar: true,
-  showGraphs: true, // needs git history from github-stats-cron
-  showAllLanguages: true,
+  showBar: app.showBar,
+  showGraphs: app.showGraphs !== false, // full gating (MIN_HISTORY_DAYS) happens in the provider
+  showAllLanguages: app.showAllLanguages,
 
-  /**
-   * Animation timing.
-   *  preset:
-   *    "cascade"  — sections appear one after the other (the original, ~6s total)
-   *    "snappy"   — same order, everything ~2x faster (~2.5s total)
-   *    "together" — all sections start almost at once (~1s total)
-   *  speed    — multiplies every delay/duration (0.5 = twice as fast)
-   *  overrides — full control: pin any section's delay/duration/stagger in
-   *              seconds, applied after preset + speed. Sections: totals,
-   *              bar, tiles, graphs, allLanguages, logo.
-   */
+  /** animation timing — preset -> speed -> per-section overrides */
   animation: {
-    preset: "together" as "cascade" | "snappy" | "together",
-    speed: 1,
-    overrides: {} as Partial<
-      Record<
-        "totals" | "bar" | "tiles" | "graphs" | "allLanguages" | "logo",
-        { delay?: number; dur?: number; stagger?: number }
-      >
-    >,
+    preset: app.animPreset,
+    speed: app.animSpeed,
+    overrides: app.animOverrides,
   },
 };
+
+export type { SectionName, SectionTiming };
 
 /**
  * Resolved per-section timings (seconds). Computed from
  * CONFIG.animation: preset -> speed multiplier -> overrides.
  */
-export type SectionName =
-  "totals" | "bar" | "tiles" | "graphs" | "allLanguages" | "logo";
-export interface SectionTiming {
+interface PresetTiming {
   delay: number;
   dur: number;
   stagger: number;
-  gap?: number; // graphs only: pause between the two plots
+  gap?: number;
 }
 
 const PRESETS: Record<
   "cascade" | "snappy" | "together",
-  Record<SectionName, SectionTiming>
+  Record<SectionName, PresetTiming>
 > = {
   cascade: {
     totals: { delay: 0.15, dur: 0.5, stagger: 0.12 },
@@ -96,7 +77,7 @@ const PRESETS: Record<
 
 export function resolveAnimation(): Record<SectionName, SectionTiming> {
   const a = CONFIG.animation;
-  const scale = (s: SectionTiming): SectionTiming => ({
+  const scale = (s: PresetTiming): SectionTiming => ({
     delay: s.delay * a.speed,
     dur: s.dur * a.speed,
     stagger: s.stagger * a.speed,
@@ -104,7 +85,7 @@ export function resolveAnimation(): Record<SectionName, SectionTiming> {
   });
   const preset = PRESETS[a.preset] ?? PRESETS.cascade;
   const base = Object.fromEntries(
-    Object.entries(preset).map(([k, v]) => [k, scale(v as SectionTiming)]),
+    Object.entries(preset).map(([k, v]) => [k, scale(v as PresetTiming)]),
   ) as Record<SectionName, SectionTiming>;
   for (const [section, o] of Object.entries(a.overrides)) {
     const target = base[section as SectionName];

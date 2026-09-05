@@ -14,6 +14,29 @@ export const THEMES: Record<"light" | "dark", Theme> = {
   dark: { bg: "#0d1117", border: "#30363d", text: "#e6edf3", muted: "#8b949e", other: "#6e7681" },
 };
 
+/**
+ * Paint set used for every attribute in the card: CSS variables with the
+ * light palette inline as fallback (for renderers without var() support).
+ * themeCss() defines what the variables resolve to.
+ */
+export const THEME_VARS: Theme = {
+  bg: "var(--gs-bg, #ffffff)",
+  border: "var(--gs-border, #d0d7de)",
+  text: "var(--gs-text, #24292f)",
+  muted: "var(--gs-muted, #57606a)",
+  other: "var(--gs-other, #8b949e)",
+};
+
+/** <style> block that pins the theme; "auto" follows the OS color scheme */
+export function themeCss(theme: "auto" | "light" | "dark"): string {
+  const vars = (t: Theme) =>
+    `--gs-bg:${t.bg};--gs-border:${t.border};--gs-text:${t.text};--gs-muted:${t.muted};--gs-other:${t.other};`;
+  const base = `:root{${vars(THEMES.light)}}`;
+  if (theme === "light") return base;
+  if (theme === "dark") return `:root{${vars(THEMES.dark)}}`;
+  return `${base}@media(prefers-color-scheme:dark){:root{${vars(THEMES.dark)}}}`;
+}
+
 export function esc(s: string): string {
   return s
     .replaceAll("&", "&amp;")

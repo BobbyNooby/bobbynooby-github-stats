@@ -1,11 +1,13 @@
 services:
-  github-stats-charts:
+  github-stats:
     build: .
-    image: github-stats-charts
+    image: github-stats
     restart: unless-stopped
     ports:
-      - "${PORT:-3001}:3001"
+      - "${PORT:-3000}:3000"
+    env_file:
+      - .env
     environment:
-      STATS_API_URL: ${STATS_API_URL:?set STATS_API_URL in .env}
-      CACHE_TTL_MINUTES: ${CACHE_TTL_MINUTES:-60}
-      DEFAULT_THEME: ${DEFAULT_THEME:-light}
+      DB_PATH: /data/stats.db
+    volumes:
+      - ./data:/data
