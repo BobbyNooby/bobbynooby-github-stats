@@ -74,7 +74,14 @@ if (config.demo) {
 }
 
 const app = createApp(config, provider);
-app.listen(config.port);
+try {
+  app.listen(config.port);
+} catch {
+  console.error(
+    `[github-stats] port ${config.port} is already in use — set PORT in .env to something free`
+  );
+  process.exit(1);
+}
 
 log(
   `serving on http://localhost:${app.server?.port} ` +

@@ -9,5 +9,6 @@ services:
       - .env
     environment:
       DB_PATH: /data/stats.db
+      PORT: 3000 # container-internal listen port must match EXPOSE/compose mapping
     volumes:
       - ./data:/data
