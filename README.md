@@ -8,6 +8,14 @@ the same service serves:
   cumulative lines-of-code and language-share graphs (see it live at `/demo`)
 - **`/api/*`** — a small JSON API over your stats history (`/swagger` for docs)
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/demo-dark.svg" />
+  <source media="(prefers-color-scheme: light)" srcset="docs/demo-light.svg" />
+  <img alt="animated GitHub stats card — language bar, logo tiles, code-over-time graphs" src="docs/demo-light.svg" />
+</picture>
+
+*(the demo card, rendered from deterministic stub data — the real one shows your numbers)*
+
 GitHub does **not** keep historical language/star data — this snapshots it
 yourself, so history starts accumulating from day one.
 
