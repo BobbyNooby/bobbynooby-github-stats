@@ -631,6 +631,7 @@ export const LINGUIST_COLORS: Record<string, string> = {
   "Vim Help File": "#199f4b",
   "Vim Snippet": "#199f4b",
   "Vim script": "#199f4b",
+  "Vim Script": "#199f4b",
   "Visual Basic .NET": "#945db7",
   "Visual Basic 6.0": "#2c6353",
   "Volt": "#1F1F1F",

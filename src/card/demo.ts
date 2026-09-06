@@ -1,6 +1,6 @@
-import type { DayHistory, LangHistoryResult, Stats, StatsResult } from "./api";
-import { LINGUIST_COLORS } from "./linguist-colors";
-import { hasLogo } from "./charts/parts";
+import type { DayHistory, LangHistoryResult, Stats, StatsResult } from "../types";
+import { LINGUIST_COLORS } from "../languages/colors";
+import { hasLogo } from "./parts";
 
 /**
  * Deterministic demo dataset — no GitHub API, no cron, no database.

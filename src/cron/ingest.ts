@@ -1,5 +1,8 @@
 import { upsertSnapshot } from "./db";
-import { languageColor } from "./colors";
+import { LINGUIST_COLORS } from "../languages/colors";
+
+/** official linguist color for REST-mode language bytes (GraphQL gets it from the API) */
+const languageColor = (name: string): string => LINGUIST_COLORS[name] ?? "#8b949e";
 
 export interface IngestOptions {
   apiBase?: string;

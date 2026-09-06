@@ -1,7 +1,7 @@
 import { Elysia } from "elysia";
 import { DemoProvider } from "./demo";
-import type { StatsProvider } from "./api";
-import { languagesChart } from "./charts/languages";
+import type { StatsProvider } from "../types";
+import { languagesChart } from "./languages";
 
 const CACHE_CONTROL = "public, max-age=21600";
 

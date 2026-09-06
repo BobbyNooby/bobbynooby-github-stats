@@ -3,9 +3,9 @@
  * card routes (src/server.ts) on the same port.
  */
 import type { AppConfig } from "./env";
-import type { StatsProvider } from "./api";
+import type { StatsProvider } from "./types";
 import { createServer as createApiServer } from "./cron/server";
-import { createServer as createCardServer } from "./server";
+import { createServer as createCardServer } from "./card/routes";
 
 export function createApp(config: AppConfig, provider: StatsProvider) {
   const api = createApiServer({

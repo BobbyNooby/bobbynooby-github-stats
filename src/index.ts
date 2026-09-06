@@ -3,14 +3,14 @@
  * serves the JSON API (/api/*, /swagger) and the animated SVG card
  * (/languages.svg). Only GITHUB_USERNAME is required — see .env.example.
  */
-import type { StatsProvider } from "./api";
+import type { StatsProvider } from "./types";
 import { createApp } from "./app";
 import { loadConfig } from "./env";
 import { DbProvider } from "./provider";
 import { initDb, latestSnapshot } from "./cron/db";
 import { ingest } from "./cron/ingest";
 import { syncCommitHistory } from "./cron/history-sync";
-import { DemoProvider } from "./demo";
+import { DemoProvider } from "./card/demo";
 
 function log(...args: unknown[]) {
   console.log("[github-stats]", ...args);

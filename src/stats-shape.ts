@@ -3,7 +3,7 @@
  * Used by both the JSON API route and the in-process card provider so the two
  * can never disagree.
  */
-import type { LangStat, Stats } from "./api";
+import type { LangStat, Stats } from "./types";
 import type { SnapshotRow } from "./cron/db";
 
 export function statsFromSnapshot(row: SnapshotRow): Stats {

@@ -1,8 +1,8 @@
-import type { DayHistory, Stats } from "../api";
-import { CASCADIA_600, QUICKSAND_300 } from "../font";
-import { LINGUIST_COLORS } from "../linguist-colors";
-import { SITE_LOGO } from "../logo";
-import { loadLogo } from "../load-logo";
+import type { DayHistory, Stats } from "../types";
+import { CASCADIA_600, QUICKSAND_300 } from "./fonts";
+import { LINGUIST_COLORS } from "../languages/colors";
+import { SITE_LOGO } from "./logo";
+import { loadLogo } from "./load-logo";
 import { THEME_VARS, esc, hasLogo, icon, logoGlyph, themeCss, type Theme } from "./parts";
 import { CONFIG, resolveAnimation } from "../config";
 

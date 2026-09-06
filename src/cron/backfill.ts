@@ -4,7 +4,7 @@
  */
 import { $ } from "bun";
 import type { CommitHistoryRow } from "./db";
-import { EXT_LANGUAGE, LANGUAGE_TYPE } from "./linguist";
+import { EXT_LANGUAGE, LANGUAGE_TYPE } from "../languages/linguist";
 
 export function langFor(path: string): string {
   const base = path.split("/").pop() ?? path;

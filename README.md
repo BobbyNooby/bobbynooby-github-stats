@@ -1,5 +1,8 @@
 # bobbynooby-github-stats
 
+[![CI](https://github.com/BobbyNooby/bobbynooby-github-stats/actions/workflows/ci.yml/badge.svg)](https://github.com/BobbyNooby/bobbynooby-github-stats/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
+
 One self-hosted service, your whole GitHub-stats card. A daily cron snapshots
 your public GitHub stats (languages, stars, forks, followers) into SQLite, and
 the same service serves:
@@ -85,6 +88,38 @@ working default. The full annotated list lives in [`.env.example`](./.env.exampl
 
 Query params override per-embed: `?theme=auto|light|dark`, `?count=1..10`
 (languages in the bar; rest grouped as Other).
+
+### Getting a GitHub token (optional, 2 minutes)
+
+Never made a token before? No code or account upgrades needed:
+
+1. On GitHub, click your avatar → **Settings** → **Developer settings**
+   (bottom of the left sidebar) → **Personal access tokens** →
+   **Fine-grained tokens** → **Generate new token**
+2. Give it any name and pick an expiration
+3. Under **Repository access**, select **Public Repositories (read-only)** —
+   that's all this service needs. Don't grant any extra permissions.
+4. Copy the `github_pat_...` token and put it in your `.env`:
+
+   ```sh
+   GITHUB_TOKEN=github_pat_your-token-here
+   ```
+
+What it unlocks: 1-request GraphQL snapshots, GitHub's official language
+colors, contribution history, and 5,000 requests/hour instead of 60. Without
+it, everything still works — just slower and with bundled colors.
+
+## Project layout
+
+```
+src/
+  index.ts app.ts env.ts   service core: boot, wiring, validated config
+  types.ts provider.ts     the data contract + in-process SQLite provider
+  stats-shape.ts config.ts snapshot→API shape, env→renderer settings
+  card/                    everything that draws the SVG
+  languages/               linguist datasets: colors, logos, extensions
+  cron/                    snapshotting, git-history sync, JSON API
+```
 
 ## Your logo
 

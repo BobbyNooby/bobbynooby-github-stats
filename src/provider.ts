@@ -9,7 +9,7 @@ import type {
   LangHistoryResult,
   StatsProvider,
   StatsResult,
-} from "./api";
+} from "./types";
 import { MIN_HISTORY_DAYS } from "./env";
 import { commitHistoryByDay, latestSnapshot } from "./cron/db";
 import { statsFromSnapshot } from "./stats-shape";

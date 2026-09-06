@@ -1,5 +1,5 @@
-import { LOGOS } from "../logos";
-import { AUTO_LOGOS, AUTO_LANG_SLUGS } from "../auto-logos";
+import { LOGOS } from "../languages/logos";
+import { AUTO_LOGOS, AUTO_LANG_SLUGS } from "../languages/auto-logos";
 
 export interface Theme {
   bg: string;
