@@ -121,13 +121,41 @@ src/
   cron/                    snapshotting, git-history sync, JSON API
 ```
 
-## Your logo
+## Logos
 
-Drop a self-contained SVG at `assets/logo.svg` and it replaces the built-in
-mark (spinning in the top-right corner). It's sanitized on load (scripts,
-event handlers and external references are stripped), scaled to fit, and
-centered — multicolor marks keep their colors. `LOGO=dot` for a pulsing dot
-instead, `LOGO=none` to remove it. Without a file, the built-in mark renders.
+**Your own mark** — drop a self-contained SVG at `assets/logo.svg` and it
+replaces the built-in mark (spinning in the top-right corner). It's sanitized
+on load (scripts, event handlers and external references are stripped), scaled
+to fit and centered — multicolor marks keep their colors. `LOGO=dot` for a
+pulsing dot instead, `LOGO=none` to remove it, `LOGO_SIZE` / `LOGO_Y` /
+`LOGO_INSET` to nudge the position. This one is read at runtime: restart and
+you're done, no rebuild.
+
+**Language logos** — three layers, first match wins:
+
+| Layer | Where | Notes |
+|---|---|---|
+| 1. Hand-curated | `src/languages/logos.ts` | ✏️ **edit this one** — overrides everything |
+| 2. Auto-matched | `src/languages/auto-logos.ts` | 🤖 GENERATED from simple-icons — don't hand-edit |
+| 3. Fallback | first letter of the name | automatic |
+
+To add or fix a language logo:
+
+1. Grab the path from [simpleicons.org](https://simpleicons.org) — search the
+   icon, download the SVG, copy the `<path d="...">` data (all icons are
+   24×24; a rare non-square one like Java also needs a `LOGO_VIEWBOX` entry
+   in `src/card/parts.ts`).
+2. Add it to `src/languages/logos.ts`, keyed by the simple-icons slug:
+
+   ```ts
+   "myslug": "M12 0C5.37 0 0 5.37 0 12s5.37 12 12 12 ...",
+   ```
+
+3. If the language doesn't light up at all, its *name → slug* mapping is
+   missing: add it to `NAME_TO_SLUG` in `src/card/parts.ts`
+   (e.g. `"c#": "csharp"`).
+
+These are code files, so pick changes up with a rebuild/redeploy.
 
 ## Local development (Bun)
 

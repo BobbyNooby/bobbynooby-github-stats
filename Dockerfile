@@ -8,6 +8,7 @@ COPY package.json bun.lock* ./
 RUN bun install --production --frozen-lockfile
 
 COPY src ./src
+COPY assets ./assets
 
 RUN mkdir -p /data
 VOLUME /data
